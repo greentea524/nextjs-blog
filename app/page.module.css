@@ -1,0 +1,84 @@
+.intro {
+  margin: 0 0 var(--space-12);
+}
+
+.title {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(1.875rem, 5vw, 2.5rem);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 38rem;
+  color: var(--color-text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-6);
+}
+
+.card {
+  position: relative;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.cardTitle {
+  margin: 0 0 var(--space-2);
+  font-size: 1.375rem;
+}
+
+.cardLink {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+/* Stretches the title's hit area over the whole card, so the card is
+   clickable without nesting block content inside an anchor. */
+.cardLink::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.card:hover .cardLink {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.meta {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.excerpt {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}
