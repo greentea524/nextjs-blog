@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --content-width: 44rem;
 
   --color-text: #1a1a1a;
@@ -6,8 +7,8 @@
   --color-background: #fdfdfc;
   --color-surface: #ffffff;
   --color-border: #e4e4e7;
-  --color-accent: #1d4ed8;
-  --color-accent-hover: #1e40af;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
   --color-code-background: #f4f4f5;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
@@ -21,6 +22,21 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-text: #f4f4f5;
+    --color-text-muted: #a1a1aa;
+    --color-background: #09090b;
+    --color-surface: #121215;
+    --color-border: #27272a;
+    --color-accent: #38bdf8;
+    --color-accent-hover: #7dd3fc;
+    --color-code-background: #18181b;
+  }
 }
 
 *,
@@ -41,6 +57,11 @@ body {
   font-size: 1rem;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-surface);
 }
 
 h1,
