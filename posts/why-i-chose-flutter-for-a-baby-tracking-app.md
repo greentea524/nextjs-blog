@@ -9,16 +9,40 @@ reminders, multiple caregivers syncing in real time. The kind of project where
 the framework choice matters less than finishing, and finishing means one person
 shipping to multiple platforms without burning out.
 
-## One codebase, web first
+## One codebase, three platforms
 
 Flutter compiles to web, iOS, and Android from the same Dart source. The app
-currently runs as a PWA on Firebase Hosting. When native mobile builds make
-sense, that is a build target change, not a rewrite.
+currently runs as a PWA on Firebase Hosting, but the native targets are not
+hypothetical — the scaffold already includes `android/` and `ios/` directories.
+When native mobile builds land, the path is `flutter build apk` or
+`flutter build ipa`, not a rewrite.
+
+That matters for a solo developer. Writing the app once and deploying it to the
+App Store, Play Store, and the web means one set of business logic, one widget
+tree, one test suite. Bug fixes ship to every platform in the same commit.
+Features do not drift between targets because there is only one implementation.
 
 React Native can target web through `react-native-web`, but it is a bolt-on.
 Going fully native means three codebases. Flutter's web target is a first-class
 output of the same compiler, with the same widget tree, the same state
 management, the same tests.
+
+## PWA — installable without a store
+
+The app ships as a Progressive Web App. Users can install it to their home
+screen on a phone or their desktop on a laptop — no app store, no review
+process, no signing certificates. Open the URL, tap "Add to Home Screen", and
+it behaves like a native app: its own window, its own icon, offline-capable
+with a service worker.
+
+For a baby tracking app this is a practical win. A caregiver visiting for the
+weekend can install the app in seconds from a link, without creating a store
+account or waiting for a download. When they leave, they can uninstall it just
+as easily — or keep it.
+
+The PWA path also sidesteps the store fees and review cycles that slow down
+iteration on a side project. Updates deploy the moment the build finishes,
+not when a reviewer approves them.
 
 ## Drawing, not configuring
 
