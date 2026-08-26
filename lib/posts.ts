@@ -138,6 +138,28 @@ export function getPostBySlug(slug: string): Post | null {
   return { ...meta, contentHtml: processed.toString() };
 }
 
+export type AdjacentPosts = {
+  prev: PostMeta | null;
+  next: PostMeta | null;
+};
+
+/**
+ * Returns previous (newer) and next (older) post metadata relative to the given slug.
+ */
+export function getAdjacentPosts(slug: string): AdjacentPosts {
+  const posts = getSortedPosts();
+  const index = posts.findIndex((p) => p.slug === slug);
+
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
+
+  return {
+    prev: index > 0 ? posts[index - 1] : null,
+    next: index < posts.length - 1 ? posts[index + 1] : null,
+  };
+}
+
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
   year: "numeric",
