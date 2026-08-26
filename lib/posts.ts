@@ -17,6 +17,7 @@ export type PostMeta = {
   date: string;
   excerpt: string;
   readingMinutes: number;
+  tags: string[];
 };
 
 export type Post = PostMeta & {
@@ -62,6 +63,13 @@ function readingMinutes(markdown: string): number {
   return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 }
 
+function parseTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((v): v is string => typeof v === "string" && v.trim() !== "");
+  }
+  return [];
+}
+
 function readPostFile(fileName: string) {
   const slug = fileName.replace(/\.md$/, "");
   const fullPath = path.join(postsDirectory, fileName);
@@ -73,6 +81,7 @@ function readPostFile(fileName: string) {
     date: normalizeDate(data.date, fileName),
     excerpt: requireString(data.excerpt, "excerpt", fileName),
     readingMinutes: readingMinutes(content),
+    tags: parseTags(data.tags),
   };
 
   return { meta, content };
@@ -93,6 +102,22 @@ export function getSortedPosts(): PostMeta[] {
   return postFileNames()
     .map((fileName) => readPostFile(fileName).meta)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+/** Aggregates all unique tags with post counts, sorted by frequency then name. */
+export function getAllTags(): { tag: string; count: number }[] {
+  const posts = getSortedPosts();
+  const counts = new Map<string, number>();
+
+  for (const post of posts) {
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(counts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
 
 export function getPostBySlug(slug: string): Post | null {

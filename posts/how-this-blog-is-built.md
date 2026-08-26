@@ -2,6 +2,7 @@
 title: "How this blog is built"
 date: "2026-08-22"
 excerpt: "Next.js 16, the App Router, static export, markdown files, CSS Modules, TypeScript, and GitHub Pages — every choice explained, and what was deliberately left out."
+tags: ["Frontend", "Next.js", "Static Site", "Architecture"]
 ---
 
 This site is a static blog. Every page is generated at build time, deployed to

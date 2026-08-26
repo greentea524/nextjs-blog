@@ -2,6 +2,7 @@
 title: "Two multiplayer architectures, one server: Ghost relays and authoritative card games"
 date: "2026-08-25"
 excerpt: "How a single Node.js Socket.io server powers two completely different multiplayer models: a dumb 15 Hz ghost relay for action games and a strictly authoritative state machine for Big 2."
+tags: ["Multiplayer", "WebSockets", "Node.js", "Architecture"]
 ---
 
 Real-time multiplayer games generally fall into one of two categories: fast-paced

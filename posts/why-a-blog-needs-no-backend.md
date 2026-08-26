@@ -2,6 +2,7 @@
 title: "Why a blog needs no backend"
 date: "2026-01-15"
 excerpt: "A blog is a read-mostly site with a handful of authors and no per-visitor state. That combination is the strongest possible case for shipping plain files."
+tags: ["Architecture", "Static Site", "Web"]
 ---
 
 Most blogs are built on a server that assembles the same HTML, from the same

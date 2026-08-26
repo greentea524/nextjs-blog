@@ -2,6 +2,7 @@
 title: "Why I chose Flutter for a baby tracking app"
 date: "2026-08-22"
 excerpt: "Flutter let me ship a multi-caregiver baby diary as a PWA with custom-painted growth charts, real-time sync, and a single Dart codebase — here is what worked and what I would reconsider."
+tags: ["Flutter", "Mobile", "PWA", "Architecture"]
 ---
 
 I built a baby tracking app — feeds, sleep, growth charts, appointment

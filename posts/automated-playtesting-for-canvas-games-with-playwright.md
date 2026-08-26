@@ -2,6 +2,7 @@
 title: "Automated playtesting for canvas games with Playwright"
 date: "2026-08-25"
 excerpt: "Why high-level test runners fail against HTML5 game canvases, and how Chrome DevTools Protocol multi-touch events caught real-world mobile regressions in CI."
+tags: ["Testing", "Playwright", "Game Dev", "QA"]
 ---
 
 Most frontend testing frameworks are designed for the DOM. You query for a

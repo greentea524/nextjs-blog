@@ -2,6 +2,7 @@
 title: "Design by math: Metroidvania ability gating in Lantern Keeper"
 date: "2026-08-25"
 excerpt: "How a strict tile-movement budget, tuned coyote time, and formal anti-soft-lock rules made progression unbreakable in a Game Boy–style puzzle platformer."
+tags: ["Game Dev", "Game Design", "Physics"]
 ---
 
 In a Metroidvania, the world is the lock and player movement is the key. When

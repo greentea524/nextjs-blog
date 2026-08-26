@@ -2,6 +2,7 @@
 title: "Building 5 Game Boy games in one web shell"
 date: "2026-08-25"
 excerpt: "How a Vite multi-entry build, pinned Phaser vendor chunks, and a shared touch runtime let five retro cartridges live together under a single GitHub Pages deployment."
+tags: ["Game Dev", "Phaser", "Vite", "Architecture"]
 ---
 
 Most web game prototypes live in isolated repositories. Each has its own

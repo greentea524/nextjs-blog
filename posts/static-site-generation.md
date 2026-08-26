@@ -1,7 +1,8 @@
 ---
-title: "Static site generation, end to end"
-date: "2026-03-12"
-excerpt: "What actually happens between npm run build and a folder of HTML — dynamic routes, the export step, and the sub-path detail that breaks deploys."
+title: "Static site generation"
+date: "2026-01-20"
+excerpt: "SSG is not a compromise for simple sites. It is the correct architecture for anything where content changes on a human cadence rather than a machine one."
+tags: ["Frontend", "SSG", "Next.js"]
 ---
 
 Static site generation gets described as "rendering at build time," which is

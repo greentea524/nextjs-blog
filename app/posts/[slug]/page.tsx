@@ -54,11 +54,22 @@ export default async function PostPage({ params }: PostPageProps) {
       <article>
         <header className={styles.header}>
           <h1 className={styles.title}>{post.title}</h1>
-          <p className={styles.meta}>
-            <time dateTime={post.date}>{formatDate(post.date)}</time>
-            {" · "}
-            {post.readingMinutes} min read
-          </p>
+          <div className={styles.metaRow}>
+            <p className={styles.meta}>
+              <time dateTime={post.date}>{formatDate(post.date)}</time>
+              {" · "}
+              {post.readingMinutes} min read
+            </p>
+            {post.tags.length > 0 && (
+              <div className={styles.tags}>
+                {post.tags.map((tag) => (
+                  <span key={tag} className={styles.tagBadge}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </header>
 
         <div

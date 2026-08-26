@@ -2,6 +2,7 @@
 title: "Building a 2D platformer in Godot 4: ASCII maps and ghost multiplayer"
 date: "2026-08-25"
 excerpt: "How ASCII level matrices, ENet ghost-race interpolation, and headless automated playtesting came together in a 12-level 2D platformer built with Godot 4."
+tags: ["Game Dev", "Godot", "Multiplayer", "GDScript"]
 ---
 
 Most 2D platformers are assembled by painting tiles in a visual editor and saving

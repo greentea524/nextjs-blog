@@ -2,6 +2,7 @@
 title: "Markdown as a content system"
 date: "2026-02-02"
 excerpt: "Frontmatter plus a directory of .md files is a real content model. It just happens to be one you can read in a terminal and diff in a pull request."
+tags: ["Frontend", "Markdown", "Architecture"]
 ---
 
 "Content management system" usually means a database, an admin panel, and a
