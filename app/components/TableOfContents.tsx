@@ -9,17 +9,38 @@ type TableOfContentsProps = {
 };
 
 export default function TableOfContents({ toc }: TableOfContentsProps) {
-  const [activeId, setActiveId] = useState<string>("");
+  const [activeId, setActiveId] = useState<string>(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hashId = window.location.hash.replace(/^#/, "");
+      if (toc.some((item) => item.id === hashId)) {
+        return hashId;
+      }
+    }
+    return "";
+  });
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
   useEffect(() => {
     if (toc.length === 0) return;
 
+    const handleHashChange = () => {
+      const hashId = window.location.hash.replace(/^#/, "");
+      if (toc.some((item) => item.id === hashId)) {
+        setActiveId(hashId);
+      }
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+
     const headingElements = toc
       .map((item) => document.getElementById(item.id))
       .filter((el): el is HTMLElement => el !== null);
 
-    if (headingElements.length === 0) return;
+    if (headingElements.length === 0) {
+      return () => {
+        window.removeEventListener("hashchange", handleHashChange);
+      };
+    }
 
     // Observe headings as they cross into view
     const observer = new IntersectionObserver(
@@ -38,15 +59,10 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
 
     headingElements.forEach((el) => observer.observe(el));
 
-    // Also check initial hash
-    if (window.location.hash) {
-      const hashId = window.location.hash.replace(/^#/, "");
-      if (toc.some((item) => item.id === hashId)) {
-        setActiveId(hashId);
-      }
-    }
-
-    return () => observer.disconnect();
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      observer.disconnect();
+    };
   }, [toc]);
 
   if (toc.length < 2) {
