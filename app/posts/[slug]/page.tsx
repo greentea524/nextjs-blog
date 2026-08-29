@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate, getAdjacentPosts, getPostBySlug, getPostSlugs } from "@/lib/posts";
 import { siteConfig } from "@/lib/site";
+import TableOfContents from "@/app/components/TableOfContents";
 import styles from "./page.module.css";
 
 type PostPageProps = {
@@ -74,6 +75,8 @@ export default async function PostPage({ params }: PostPageProps) {
             )}
           </div>
         </header>
+
+        <TableOfContents toc={post.toc} />
 
         <div
           className={styles.prose}

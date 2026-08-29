@@ -20,9 +20,17 @@ export type PostMeta = {
   tags: string[];
 };
 
+export type TocItem = {
+  id: string;
+  text: string;
+  level: 2 | 3;
+};
+
 export type Post = PostMeta & {
-  /** Rendered markdown body. */
+  /** Rendered markdown body with heading ids. */
   contentHtml: string;
+  /** Extracted table of contents items. */
+  toc: TocItem[];
 };
 
 /**
@@ -120,6 +128,40 @@ export function getAllTags(): { tag: string; count: number }[] {
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function extractTocAndInjectIds(htmlContent: string): { html: string; toc: TocItem[] } {
+  const toc: TocItem[] = [];
+  const slugCounts = new Map<string, number>();
+
+  const headingRegex = /<h([23])>(.*?)<\/h\1>/gi;
+
+  const htmlWithIds = htmlContent.replace(headingRegex, (_, levelStr, innerHtml) => {
+    const level = parseInt(levelStr, 10) as 2 | 3;
+    const cleanText = innerHtml.replace(/<[^>]+>/g, "").trim();
+    let id = slugify(cleanText);
+    if (!id) id = `section-${toc.length + 1}`;
+
+    const count = slugCounts.get(id) ?? 0;
+    slugCounts.set(id, count + 1);
+    if (count > 0) {
+      id = `${id}-${count}`;
+    }
+
+    toc.push({ id, text: cleanText, level });
+    return `<h${level} id="${id}">${innerHtml}</h${level}>`;
+  });
+
+  return { html: htmlWithIds, toc };
+}
+
 export function getPostBySlug(slug: string): Post | null {
   const fileName = `${slug}.md`;
 
@@ -134,8 +176,9 @@ export function getPostBySlug(slug: string): Post | null {
   // Posts are local files written by the site author, so the markdown is
   // trusted and rendered without sanitization.
   const processed = remark().use(gfm).use(html).processSync(content);
+  const { html: contentHtml, toc } = extractTocAndInjectIds(processed.toString());
 
-  return { ...meta, contentHtml: processed.toString() };
+  return { ...meta, contentHtml, toc };
 }
 
 export type AdjacentPosts = {
