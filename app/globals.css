@@ -9,7 +9,14 @@
   --color-border: #e4e4e7;
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
+  /* Inline code, chips, and other small tinted surfaces. */
   --color-code-background: #f4f4f5;
+  /* Code blocks sit a step deeper than the page, with their own border. */
+  --color-code-surface: #f1f1f4;
+  --color-code-border: #e0e0e6;
+  /* Accent-tinted quote panel and the alternating table row. */
+  --color-quote-surface: #f5f7fd;
+  --color-row-alt: #f8f8f9;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
@@ -36,6 +43,10 @@
     --color-accent: #38bdf8;
     --color-accent-hover: #7dd3fc;
     --color-code-background: #18181b;
+    --color-code-surface: #141418;
+    --color-code-border: #2b2b31;
+    --color-quote-surface: #0d1519;
+    --color-row-alt: #101013;
   }
 }
 

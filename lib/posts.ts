@@ -207,7 +207,10 @@ const processor = unified()
   .use(remarkRehype)
   .use(rehypeHeadingIds)
   .use(rehypePrettyCode, {
-    theme: { light: "github-light", dark: "github-dark" },
+    // The -default pair carries GitHub's current token colours, whose dimmest
+    // tokens (comments, parameters) hold far more contrast against the code
+    // panel than the older github-light/github-dark pair did.
+    theme: { light: "github-light-default", dark: "github-dark-default" },
     // The post stylesheet already gives `pre` its surface and border; taking
     // Shiki's background too would leave code blocks out of step with the
     // site's palette.
