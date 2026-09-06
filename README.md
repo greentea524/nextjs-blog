@@ -67,6 +67,39 @@ word count, not declared.
 
 Commit and push to `main` — the workflow rebuilds and redeploys.
 
+## Feeds, SEO, and social previews
+
+The build emits four things beyond the pages themselves:
+
+| Output                     | Source                          | Notes                                            |
+| -------------------------- | ------------------------------- | ------------------------------------------------ |
+| `/feed.xml`                | `app/feed.xml/route.ts`         | RSS 2.0, full post HTML in `content:encoded`     |
+| `/sitemap.xml`             | `app/sitemap.ts`                | Home plus every post                             |
+| `/robots.txt`              | `app/robots.ts`                 | Points at the sitemap                            |
+| `/og.png`, `/posts/*/og.png` | `app/**/og.png/route.tsx`     | 1200×630 social cards rendered by `next/og`      |
+
+Two deployment details shape how these are built:
+
+- **The social cards are route handlers, not the `opengraph-image` file
+  convention.** GitHub Pages derives `Content-Type` from the file extension
+  alone, and the metadata convention emits an extensionless `opengraph-image`
+  file that Pages serves as `application/octet-stream` — which crawlers reject.
+  Naming the route segment `og.png` gives the exported file a real extension.
+  (`generateImageMetadata` can supply an extension at the app root, but it is
+  not supported inside a dynamic segment under `output: export`.) Because a
+  route handler does not inject `og:image` tags the way the file convention
+  does, those tags are declared by hand in the `metadata` exports.
+- **`robots.txt` is published but not consulted.** Crawlers only read
+  `robots.txt` from the domain root, and a project site serves it from
+  `/nextjs-blog/robots.txt`. It is still correct to ship — it documents intent
+  and becomes live if the site ever moves to a custom domain. Submit
+  `/nextjs-blog/sitemap.xml` to Search Console directly in the meantime.
+
+Every page also carries JSON-LD: `BlogPosting` on articles, `Blog` on the
+index. Note that Next replaces the whole `alternates` metadata object per
+route rather than merging it, so any page declaring a canonical URL must also
+spread in `feedAlternates` from `lib/site.ts` to keep RSS autodiscovery.
+
 ## Deployment
 
 `.github/workflows/build-and-deploy.yml` runs on every push to `main`: install,

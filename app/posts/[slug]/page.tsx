@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate, getAdjacentPosts, getPostBySlug, getPostSlugs } from "@/lib/posts";
-import { siteConfig } from "@/lib/site";
+import { OG_SIZE } from "@/lib/og";
+import { feedAlternates, postUrl, siteConfig, siteUrl } from "@/lib/site";
+import JsonLd from "@/app/components/JsonLd";
 import TableOfContents from "@/app/components/TableOfContents";
 import styles from "./page.module.css";
 
@@ -28,17 +30,27 @@ export async function generateMetadata({
   }
 
   const url = `/posts/${post.slug}`;
+  const image = `${url}/og.png`;
 
   return {
     title: post.title,
     description: post.excerpt,
-    alternates: { canonical: url },
+    alternates: { canonical: url, ...feedAlternates },
     openGraph: {
       type: "article",
       title: post.title,
       description: post.excerpt,
       url,
       publishedTime: post.date,
+      tags: [...post.tags],
+      authors: [siteConfig.name],
+      images: [{ url: image, ...OG_SIZE, alt: post.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [{ url: image, alt: post.title }],
     },
   };
 }
@@ -52,9 +64,40 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const { prev, next } = getAdjacentPosts(slug);
+  const url = postUrl(post.slug);
+  const imageUrl = siteUrl(`/posts/${post.slug}/og.png`);
+
+  const author = {
+    "@type": "Person",
+    name: siteConfig.name,
+    url: siteConfig.github,
+  };
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          headline: post.title,
+          description: post.excerpt,
+          datePublished: post.date,
+          dateModified: post.date,
+          url,
+          mainEntityOfPage: { "@type": "WebPage", "@id": url },
+          image: imageUrl,
+          author,
+          publisher: author,
+          inLanguage: siteConfig.language,
+          keywords: post.tags,
+          isPartOf: {
+            "@type": "Blog",
+            name: siteConfig.title,
+            url: siteUrl("/"),
+          },
+        }}
+      />
+
       <article>
         <header className={styles.header}>
           <h1 className={styles.title}>{post.title}</h1>
@@ -94,7 +137,7 @@ export default async function PostPage({ params }: PostPageProps) {
           <p className={styles.authorBio}>{siteConfig.description}</p>
           <div className={styles.authorLinks}>
             <a
-              href="https://github.com/greentea524"
+              href={siteConfig.github}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.authorLink}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteConfig } from "@/lib/site";
+import { OG_SIZE } from "@/lib/og";
+import { feedAlternates, siteConfig } from "@/lib/site";
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -13,12 +14,22 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   authors: [{ name: siteConfig.name }],
+  alternates: { ...feedAlternates },
   openGraph: {
     type: "website",
     siteName: siteConfig.title,
     title: siteConfig.title,
     description: siteConfig.description,
     url: "/",
+    // Served by app/og.png/route.tsx; these tags are set by hand because a
+    // route handler does not inject them the way `opengraph-image` would.
+    images: [{ url: "/og.png", ...OG_SIZE, alt: siteConfig.title }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [{ url: "/og.png", alt: siteConfig.title }],
   },
 };
 
