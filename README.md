@@ -14,7 +14,7 @@ Tracked as [KAN-67](https://gtea524.atlassian.net/browse/KAN-67).
 | Framework | Next.js 16 (App Router)                    |
 | Rendering | SSG via `generateStaticParams`             |
 | Content   | Local `.md` files, gray-matter frontmatter |
-| Markdown  | remark + remark-gfm + remark-html          |
+| Markdown  | remark + remark-gfm → rehype + Shiki       |
 | Styling   | Vanilla CSS with CSS Modules               |
 | Hosting   | GitHub Pages (static export)               |
 
@@ -91,6 +91,9 @@ ever switched to the legacy build-from-branch source.
 - Markdown is rendered without sanitization. Posts are local files written by
   the site author, so the input is trusted — reconsider if content ever comes
   from elsewhere.
+- Code blocks are syntax-highlighted by Shiki during `next build`. Each token
+  carries a light and a dark colour as an inline CSS variable, so switching
+  themes is a CSS-only swap and no highlighting JavaScript reaches the browser.
 - `npm audit` reports advisories in the dev toolchain (ESLint's `minimatch`
   chain and PostCSS). None are runtime dependencies, so nothing reaches the
   browser.
