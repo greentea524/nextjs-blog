@@ -30,6 +30,8 @@
   gap: var(--space-2);
 }
 
+/* Now an anchor to the tag's archive, so the default underline is cleared and
+   hover is signalled with the accent colour instead. */
 .tagBadge {
   display: inline-block;
   padding: 0.15rem 0.5rem;
@@ -39,6 +41,21 @@
   background-color: var(--color-code-background);
   border: 1px solid var(--color-border);
   border-radius: 4px;
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.tagBadge:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagBadge {
+    transition: none;
+  }
 }
 
 /* Element selectors below target the HTML rendered from markdown, which

@@ -34,6 +34,11 @@ export function postUrl(slug: string): string {
   return siteUrl(`/posts/${slug}/`);
 }
 
+/** Canonical absolute URL for a tag archive. */
+export function tagUrl(slug: string): string {
+  return siteUrl(`/tags/${slug}/`);
+}
+
 /**
  * RSS autodiscovery link for the document head.
  *

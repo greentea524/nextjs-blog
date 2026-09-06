@@ -120,6 +120,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* Selecting a tag adds a third item here, so allow wrapping on narrow
+     screens rather than letting the row squash. */
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
   font-size: 0.875rem;
   color: var(--color-text-muted);
   padding-bottom: var(--space-2);
@@ -285,4 +289,14 @@
   .card:hover .cardArrow {
     transform: none;
   }
+}
+
+/* Link out to the static archive for whichever tag the filter has selected. */
+.archiveLink {
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.archiveLink:hover {
+  text-decoration: underline;
 }

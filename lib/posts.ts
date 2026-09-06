@@ -10,6 +10,9 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 import type { VFile } from "vfile";
+// Explicit ".ts" so this resolves under Node's test runner as well as the
+// bundler — tsconfig enables allowImportingTsExtensions for the same reason.
+import { tagSlug } from "./tags.ts";
 
 /**
  * Resolved per call rather than once at import, so a test can point the reader
@@ -163,6 +166,62 @@ function headingText(heading: Element): string {
     text += node.value;
   });
   return text.trim();
+}
+
+/**
+ * Maps each tag slug back to the tag it came from.
+ *
+ * Two distinct tags can slugify to the same string — "Next.js" and "NextJS"
+ * both become "nextjs" — which would quietly serve one archive for both and
+ * lose half the posts. That is a content mistake with an obvious fix, so fail
+ * the build and name both tags rather than papering over it.
+ */
+function tagsBySlug(): Map<string, string> {
+  const bySlug = new Map<string, string>();
+
+  for (const { tag } of getAllTags()) {
+    const slug = tagSlug(tag);
+    const existing = bySlug.get(slug);
+
+    if (existing !== undefined && existing !== tag) {
+      throw new Error(
+        `Tags "${existing}" and "${tag}" both produce the slug "${slug}" — rename one so each tag has its own archive URL.`,
+      );
+    }
+
+    bySlug.set(slug, tag);
+  }
+
+  return bySlug;
+}
+
+export { tagSlug };
+
+/** Every tag slug that should be built as an archive page. */
+export function getTagSlugs(): string[] {
+  return Array.from(tagsBySlug().keys());
+}
+
+export type TagArchive = {
+  /** The tag as written in frontmatter, for display. */
+  tag: string;
+  slug: string;
+  /** Posts carrying the tag, newest first. */
+  posts: PostMeta[];
+};
+
+export function getTagBySlug(slug: string): TagArchive | null {
+  const tag = tagsBySlug().get(slug);
+
+  if (tag === undefined) {
+    return null;
+  }
+
+  return {
+    tag,
+    slug,
+    posts: getSortedPosts().filter((post) => post.tags.includes(tag)),
+  };
 }
 
 /**

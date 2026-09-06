@@ -60,6 +60,18 @@ Body copy starts here. Start headings at `##` — the post title is the page's
 only `<h1>`.
 ```
 
+Each distinct value in `tags` gets its own statically-built archive at
+`/tags/<slug>/`, where the slug is the lowercased, hyphenated tag
+("Game Dev" becomes `game-dev`, "Next.js" becomes `nextjs`). Because that
+mapping is lossy, two tags that differ only in punctuation or case would
+collide on one URL and silently serve half their posts — so the build fails
+and names both tags instead. Rename one and it passes.
+
+That slug function lives in `lib/tags.ts`, separate from the `slugify` used
+for heading anchors in `lib/posts.ts`, because the home page filter is a
+client component and `lib/posts.ts` reads the filesystem. Both the filter and
+the server-rendered archives have to derive the same URL.
+
 All three frontmatter fields are required and validated at build time: a
 missing or malformed field fails the build with the filename in the error
 rather than rendering `undefined` into a meta tag. Reading time is derived from
@@ -71,12 +83,13 @@ Commit and push to `main` — the workflow rebuilds and redeploys.
 
 The build emits four things beyond the pages themselves:
 
-| Output                     | Source                          | Notes                                            |
-| -------------------------- | ------------------------------- | ------------------------------------------------ |
-| `/feed.xml`                | `app/feed.xml/route.ts`         | RSS 2.0, full post HTML in `content:encoded`     |
-| `/sitemap.xml`             | `app/sitemap.ts`                | Home plus every post                             |
-| `/robots.txt`              | `app/robots.ts`                 | Points at the sitemap                            |
-| `/og.png`, `/posts/*/og.png` | `app/**/og.png/route.tsx`     | 1200×630 social cards rendered by `next/og`      |
+| Output                       | Source                    | Notes                                        |
+| ---------------------------- | ------------------------- | -------------------------------------------- |
+| `/feed.xml`                  | `app/feed.xml/route.ts`   | RSS 2.0, full post HTML in `content:encoded` |
+| `/sitemap.xml`               | `app/sitemap.ts`          | Home, every post, every tag archive          |
+| `/robots.txt`                | `app/robots.ts`           | Points at the sitemap                        |
+| `/og.png`, `/posts/*/og.png` | `app/**/og.png/route.tsx` | 1200×630 social cards rendered by `next/og`  |
+| `/tags/<tag>/`               | `app/tags/[tag]/page.tsx` | One static archive per tag                   |
 
 Two deployment details shape how these are built:
 
@@ -96,7 +109,7 @@ Two deployment details shape how these are built:
   `/nextjs-blog/sitemap.xml` to Search Console directly in the meantime.
 
 Every page also carries JSON-LD: `BlogPosting` on articles, `Blog` on the
-index. Note that Next replaces the whole `alternates` metadata object per
+index, `CollectionPage` on tag archives. Note that Next replaces the whole `alternates` metadata object per
 route rather than merging it, so any page declaring a canonical URL must also
 spread in `feedAlternates` from `lib/site.ts` to keep RSS autodiscovery.
 

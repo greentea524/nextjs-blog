@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatDate, getAdjacentPosts, getPostBySlug, getPostSlugs } from "@/lib/posts";
+import {
+  formatDate,
+  getAdjacentPosts,
+  getPostBySlug,
+  getPostSlugs,
+  tagSlug,
+} from "@/lib/posts";
 import { OG_SIZE } from "@/lib/og";
 import { feedAlternates, postUrl, siteConfig, siteUrl } from "@/lib/site";
 import JsonLd from "@/app/components/JsonLd";
@@ -110,9 +116,13 @@ export default async function PostPage({ params }: PostPageProps) {
             {post.tags.length > 0 && (
               <div className={styles.tags}>
                 {post.tags.map((tag) => (
-                  <span key={tag} className={styles.tagBadge}>
+                  <Link
+                    key={tag}
+                    href={`/tags/${tagSlug(tag)}`}
+                    className={styles.tagBadge}
+                  >
                     {tag}
-                  </span>
+                  </Link>
                 ))}
               </div>
             )}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import type { PostMeta } from "@/lib/posts";
+import { tagSlug } from "@/lib/tags";
 import styles from "./PostFilter.module.css";
 
 type TagCount = {
@@ -110,6 +111,16 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
           Showing {filteredPosts.length} of {posts.length}{" "}
           {posts.length === 1 ? "note" : "notes"}
         </span>
+        {/* The filter above is instant but has no URL; this is the shareable,
+            crawlable version of the same view. */}
+        {selectedTag !== "all" && (
+          <Link
+            href={`/tags/${tagSlug(selectedTag)}`}
+            className={styles.archiveLink}
+          >
+            View the {selectedTag} archive →
+          </Link>
+        )}
         {(searchQuery || selectedTag !== "all") && (
           <button
             type="button"
