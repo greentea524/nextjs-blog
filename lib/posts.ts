@@ -1,9 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
-import { remark } from "remark";
-import gfm from "remark-gfm";
-import html from "remark-html";
+import type { Element, Root } from "hast";
+import rehypePrettyCode from "rehype-pretty-code";
+import rehypeStringify from "rehype-stringify";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import remarkRehype from "remark-rehype";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
+import type { VFile } from "vfile";
 
 const postsDirectory = path.join(process.cwd(), "posts");
 
@@ -137,32 +143,85 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function extractTocAndInjectIds(htmlContent: string): { html: string; toc: TocItem[] } {
-  const toc: TocItem[] = [];
-  const slugCounts = new Map<string, number>();
-
-  const headingRegex = /<h([23])>(.*?)<\/h\1>/gi;
-
-  const htmlWithIds = htmlContent.replace(headingRegex, (_, levelStr, innerHtml) => {
-    const level = parseInt(levelStr, 10) as 2 | 3;
-    const cleanText = innerHtml.replace(/<[^>]+>/g, "").trim();
-    let id = slugify(cleanText);
-    if (!id) id = `section-${toc.length + 1}`;
-
-    const count = slugCounts.get(id) ?? 0;
-    slugCounts.set(id, count + 1);
-    if (count > 0) {
-      id = `${id}-${count}`;
-    }
-
-    toc.push({ id, text: cleanText, level });
-    return `<h${level} id="${id}">${innerHtml}</h${level}>`;
+/** Concatenates the text of a heading, dropping inline markup like `<code>`. */
+function headingText(heading: Element): string {
+  let text = "";
+  visit(heading, "text", (node) => {
+    text += node.value;
   });
-
-  return { html: htmlWithIds, toc };
+  return text.trim();
 }
 
-export function getPostBySlug(slug: string): Post | null {
+/**
+ * Injects ids on h2/h3 and collects the table of contents in the same pass,
+ * leaving the result on the file so `getPostBySlug` can read it back.
+ */
+function rehypeHeadingIds() {
+  return (tree: Root, file: VFile) => {
+    const toc: TocItem[] = [];
+    const slugCounts = new Map<string, number>();
+
+    visit(tree, "element", (node) => {
+      if (node.tagName !== "h2" && node.tagName !== "h3") {
+        return;
+      }
+
+      const level = node.tagName === "h2" ? 2 : 3;
+      const text = headingText(node);
+      let id = slugify(text) || `section-${toc.length + 1}`;
+
+      // Repeated heading text gets a counter suffix so every id stays unique.
+      const count = slugCounts.get(id) ?? 0;
+      slugCounts.set(id, count + 1);
+      if (count > 0) {
+        id = `${id}-${count}`;
+      }
+
+      node.properties.id = id;
+      toc.push({ id, text, level });
+    });
+
+    file.data.toc = toc;
+  };
+}
+
+declare module "vfile" {
+  interface DataMap {
+    toc: TocItem[];
+  }
+}
+
+// GFM adds tables, strikethrough, and autolinks on top of CommonMark — without
+// it a markdown table renders as raw pipe characters.
+//
+// Posts are local files written by the site author, so the markdown is trusted
+// and rendered without sanitization.
+//
+// Shiki tokenizes code blocks here, at build time, emitting a light and a dark
+// colour per token as inline CSS variables — no highlighting JavaScript is
+// shipped to the reader. See `.prose pre` in the post stylesheet for the
+// variable that each theme picks up.
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkRehype)
+  .use(rehypeHeadingIds)
+  .use(rehypePrettyCode, {
+    theme: { light: "github-light", dark: "github-dark" },
+    // The post stylesheet already gives `pre` its surface and border; taking
+    // Shiki's background too would leave code blocks out of step with the
+    // site's palette.
+    keepBackground: false,
+    // Line rows only matter for line highlighting, which posts don't use, and
+    // a grid container breaks horizontal scrolling of long lines.
+    grid: false,
+    // Fences written without a language still get the same markup, so every
+    // code block on the site is styled identically.
+    defaultLang: { block: "plaintext" },
+  })
+  .use(rehypeStringify);
+
+export async function getPostBySlug(slug: string): Promise<Post | null> {
   const fileName = `${slug}.md`;
 
   if (!postFileNames().includes(fileName)) {
@@ -170,15 +229,15 @@ export function getPostBySlug(slug: string): Post | null {
   }
 
   const { meta, content } = readPostFile(fileName);
-  // GFM adds tables, strikethrough, and autolinks on top of CommonMark —
-  // without it a markdown table renders as raw pipe characters.
-  //
-  // Posts are local files written by the site author, so the markdown is
-  // trusted and rendered without sanitization.
-  const processed = remark().use(gfm).use(html).processSync(content);
-  const { html: contentHtml, toc } = extractTocAndInjectIds(processed.toString());
+  // Shiki loads its themes and grammars asynchronously, so rendering a post is
+  // async too. It all still happens during `next build`.
+  const file = await processor.process(content);
 
-  return { ...meta, contentHtml, toc };
+  return {
+    ...meta,
+    contentHtml: String(file),
+    toc: file.data.toc ?? [],
+  };
 }
 
 export type AdjacentPosts = {

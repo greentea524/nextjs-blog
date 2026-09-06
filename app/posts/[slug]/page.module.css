@@ -108,6 +108,27 @@
   background: none;
 }
 
+/* rehype-pretty-code wraps each highlighted block in a figure. */
+.prose figure[data-rehype-pretty-code-figure] {
+  margin: 0;
+}
+
+/*
+ * Shiki tokenizes at build time and writes both theme colours onto every token
+ * as inline custom properties, so switching themes is a CSS-only swap and no
+ * highlighting JavaScript ships. Fences with no language have no token colours;
+ * those inherit the body text colour.
+ */
+.prose pre span {
+  color: var(--shiki-light, inherit);
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose pre span {
+    color: var(--shiki-dark, inherit);
+  }
+}
+
 .tableWrapper,
 .prose table {
   display: block;
