@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, test } from "node:test";
+import { afterEach, describe, mock, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 // Pin a timezone west of Greenwich. A date normalized with local-time
@@ -28,7 +30,40 @@ function useFixture(name: string): void {
 
 afterEach(() => {
   process.chdir(repoRoot);
+  mock.restoreAll();
 });
+
+/**
+ * A throwaway site with its own posts, so a caching test starts against paths
+ * nothing has read yet. The caches key on absolute path, so each temporary
+ * directory is a cold cache.
+ */
+function useTemporarySite(posts: Record<string, string>): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "nextjs-blog-test-"));
+  fs.mkdirSync(path.join(root, "posts"));
+  writePosts(root, posts);
+  process.chdir(root);
+  return root;
+}
+
+function writePosts(root: string, posts: Record<string, string>): void {
+  for (const [fileName, body] of Object.entries(posts)) {
+    fs.writeFileSync(path.join(root, "posts", fileName), body);
+  }
+}
+
+function post(title: string): string {
+  return `---\ntitle: "${title}"\ndate: "2026-03-04"\nexcerpt: "An excerpt."\n---\n\nBody.\n`;
+}
+
+/** Counts reads of markdown files, ignoring anything else the runtime reads. */
+function countMarkdownReads(): () => number {
+  const spy = mock.method(fs, "readFileSync");
+  return () =>
+    spy.mock.calls.filter((call) =>
+      String(call.arguments[0]).endsWith(".md"),
+    ).length;
+}
 
 // Imported dynamically so the timezone above is in place first.
 const {
@@ -267,6 +302,73 @@ describe("formatDate", () => {
     // Written as January 15 even though the pinned timezone is still on
     // January 14 at UTC midnight.
     assert.equal(formatDate("2026-01-15"), "January 15, 2026");
+  });
+});
+
+describe("caching", () => {
+  test("reads and parses each file once, however often it is asked", (t) => {
+    const root = useTemporarySite({
+      "one.md": post("One"),
+      "two.md": post("Two"),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const markdownReads = countMarkdownReads();
+
+    getSortedPosts();
+    assert.equal(markdownReads(), 2, "a cold cache reads both files");
+
+    getSortedPosts();
+    getAllTags();
+    getPostSlugs();
+    assert.equal(markdownReads(), 2, "later calls read nothing further");
+  });
+
+  test("renders a post once and hands back the same result", async (t) => {
+    const root = useTemporarySite({ "one.md": post("One") });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const first = await getPostBySlug("one");
+    const second = await getPostBySlug("one");
+
+    assert.ok(first, "expected the post to exist");
+    assert.equal(first, second, "expected the rendered post to be reused");
+  });
+
+  test("picks up an edit to a post file", async (t) => {
+    const root = useTemporarySite({ "one.md": post("Before") });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    assert.equal(getSortedPosts()[0].title, "Before");
+    assert.equal((await getPostBySlug("one"))?.title, "Before");
+
+    writePosts(root, { "one.md": post("After") });
+    // Force a modification time the cache cannot mistake for the old one, which
+    // a coarse filesystem clock might otherwise report for a quick rewrite.
+    const later = new Date(Date.now() + 2000);
+    fs.utimesSync(path.join(root, "posts", "one.md"), later, later);
+
+    assert.equal(getSortedPosts()[0].title, "After");
+    assert.equal((await getPostBySlug("one"))?.title, "After");
+  });
+
+  test("retries a post that failed rather than caching the failure", async (t) => {
+    // A post with no date at all, which the frontmatter check rejects.
+    const root = useTemporarySite({
+      "one.md": '---\ntitle: "One"\nexcerpt: "An excerpt."\n---\n\nNo date.\n',
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    const markdownReads = countMarkdownReads();
+
+    await assert.rejects(() => getPostBySlug("one"), /frontmatter "date"/);
+    const afterFirstAttempt = markdownReads();
+
+    await assert.rejects(() => getPostBySlug("one"), /frontmatter "date"/);
+    assert.ok(
+      markdownReads() > afterFirstAttempt,
+      "expected the failed post to be read again rather than served from cache",
+    );
   });
 });
 

@@ -93,6 +93,9 @@ ever switched to the legacy build-from-branch source.
 - Markdown is rendered without sanitization. Posts are local files written by
   the site author, so the input is trusted — reconsider if content ever comes
   from elsewhere.
+- Parsed and rendered posts are memoized per process, keyed by file path and
+  modification time. A build reads each markdown file once; `next dev` still
+  picks up an edit as soon as it lands.
 - Code blocks are syntax-highlighted by Shiki during `next build`. Each token
   carries a light and a dark colour as an inline CSS variable, so switching
   themes is a CSS-only swap and no highlighting JavaScript reaches the browser.
