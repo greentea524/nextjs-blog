@@ -11,7 +11,14 @@ import { unified } from "unified";
 import { visit } from "unist-util-visit";
 import type { VFile } from "vfile";
 
-const postsDirectory = path.join(process.cwd(), "posts");
+/**
+ * Resolved per call rather than once at import, so a test can point the reader
+ * at a fixture directory by changing the working directory. A build never
+ * changes it.
+ */
+function postsDirectory(): string {
+  return path.join(process.cwd(), "posts");
+}
 
 const WORDS_PER_MINUTE = 200;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -86,7 +93,7 @@ function parseTags(value: unknown): string[] {
 
 function readPostFile(fileName: string) {
   const slug = fileName.replace(/\.md$/, "");
-  const fullPath = path.join(postsDirectory, fileName);
+  const fullPath = path.join(postsDirectory(), fileName);
   const { data, content } = matter(fs.readFileSync(fullPath, "utf8"));
 
   const meta: PostMeta = {
@@ -103,7 +110,7 @@ function readPostFile(fileName: string) {
 
 function postFileNames(): string[] {
   return fs
-    .readdirSync(postsDirectory)
+    .readdirSync(postsDirectory())
     .filter((fileName) => fileName.endsWith(".md"));
 }
 
@@ -111,11 +118,17 @@ export function getPostSlugs(): string[] {
   return postFileNames().map((fileName) => fileName.replace(/\.md$/, ""));
 }
 
-/** Every post's metadata, newest first. */
+/**
+ * Every post's metadata, newest first.
+ *
+ * Posts sharing a date keep the order the directory listing gave them, which
+ * is alphabetical by filename. Returning a non-zero comparison for equal dates
+ * would leave the result at the mercy of the sort implementation.
+ */
 export function getSortedPosts(): PostMeta[] {
   return postFileNames()
     .map((fileName) => readPostFile(fileName).meta)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 /** Aggregates all unique tags with post counts, sorted by frequency then name. */

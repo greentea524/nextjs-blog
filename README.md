@@ -16,6 +16,7 @@ Tracked as [KAN-67](https://gtea524.atlassian.net/browse/KAN-67).
 | Content   | Local `.md` files, gray-matter frontmatter |
 | Markdown  | remark + remark-gfm → rehype + Shiki       |
 | Styling   | Vanilla CSS with CSS Modules               |
+| Tests     | node --test, no test dependencies          |
 | Hosting   | GitHub Pages (static export)               |
 
 There is no backend. Everything runs at build time; the deployed site is a
@@ -28,6 +29,7 @@ npm install
 npm run dev     # http://localhost:3000/nextjs-blog
 npm run build   # writes the static site to out/
 npm run lint
+npm test        # unit tests for lib/posts.ts
 ```
 
 The dev server and build both serve from the `/nextjs-blog` sub-path, matching
