@@ -74,13 +74,27 @@
 
 .prose li {
   margin-block: var(--space-2);
+  padding-left: 0.15rem;
+}
+
+/* A quieter marker keeps the eye on the text rather than the bullet. */
+.prose li::marker {
+  color: var(--color-text-muted);
+}
+
+/* Nested lists tuck in rather than inheriting the full paragraph rhythm. */
+.prose li > ul,
+.prose li > ol {
+  margin-block: var(--space-2);
 }
 
 .prose blockquote {
   margin: var(--space-6) 0;
-  padding: var(--space-2) var(--space-6);
-  border-left: 3px solid var(--color-accent);
-  color: var(--color-text-muted);
+  padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 0 8px 8px 0;
+  background-color: var(--color-quote-surface);
+  color: var(--color-text);
   font-style: italic;
 }
 
@@ -89,23 +103,34 @@
 }
 
 .prose code {
-  padding: 0.15em 0.35em;
+  padding: 0.15em 0.4em;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   background-color: var(--color-code-background);
+  /* An inline snippet that wraps keeps its border and padding on both halves
+     rather than splitting one box across the line break. */
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .prose pre {
   margin-block: var(--space-6);
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-code-border);
   border-radius: 8px;
-  background-color: var(--color-code-background);
+  background-color: var(--color-code-surface);
   overflow-x: auto;
+  line-height: 1.65;
+  tab-size: 2;
 }
 
 .prose pre code {
   padding: 0;
+  border: 0;
   background: none;
+  /* `code` and `pre` both carry 0.9em, which compounds to ~13px on a nested
+     `pre > code`. Inheriting keeps block code at the same size as inline. */
+  font-size: inherit;
 }
 
 /* rehype-pretty-code wraps each highlighted block in a figure. */
@@ -139,18 +164,31 @@
 .prose table {
   margin-block: var(--space-6);
   border-collapse: collapse;
+  /* Columns stay on one line; the wrapper above scrolls when they overflow. */
   white-space: nowrap;
+  font-size: 0.9375rem;
 }
 
+/* Horizontal rules alone: vertical grid lines fight with the zebra rows. */
 .prose th,
 .prose td {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
 }
 
 .prose th {
-  background-color: var(--color-code-background);
+  border-bottom-width: 2px;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+}
+
+.prose tbody tr:nth-child(even) {
+  background-color: var(--color-row-alt);
+}
+
+.prose tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .prose hr {
