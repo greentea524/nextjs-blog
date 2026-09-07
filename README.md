@@ -60,6 +60,19 @@ Body copy starts here. Start headings at `##` — the post title is the page's
 only `<h1>`.
 ```
 
+Two frontmatter fields keep a post out of the published site:
+
+- `draft: true` hides it. The value must be an unquoted boolean — a quoted
+  `"true"` is a string, and the build fails rather than publish a post its
+  author believed was hidden.
+- A `date` after today hides it until that day, evaluated in UTC. Write a post
+  ahead of time and the first build on or after its date picks it up.
+
+Both apply to `next build` only. `next dev` shows every post, so a draft can be
+written and previewed at its real URL before it goes live. A hidden post is
+absent from everything the build emits: its own page, the home page, tag
+archives, `sitemap.xml`, `feed.xml` and its OG image.
+
 Each distinct value in `tags` gets its own statically-built archive at
 `/tags/<slug>/`, where the slug is the lowercased, hyphenated tag
 ("Game Dev" becomes `game-dev`, "Next.js" becomes `nextjs`). Because that

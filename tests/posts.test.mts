@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, mock, test } from "node:test";
+import type { TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
 
 // Pin a timezone west of Greenwich. A date normalized with local-time
@@ -54,6 +55,36 @@ function writePosts(root: string, posts: Record<string, string>): void {
 
 function post(title: string): string {
   return `---\ntitle: "${title}"\ndate: "2026-03-04"\nexcerpt: "An excerpt."\n---\n\nBody.\n`;
+}
+
+/** A post with an explicit date, and optionally a `draft` line. */
+function datedPost(title: string, date: string, draft?: string): string {
+  const draftLine = draft === undefined ? "" : `draft: ${draft}\n`;
+  return `---\ntitle: "${title}"\ndate: "${date}"\nexcerpt: "An excerpt."\n${draftLine}---\n\nBody.\n`;
+}
+
+/** A calendar date a given number of days from today, in UTC. */
+function daysFromToday(days: number): string {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * The draft and future-date filters only apply to a production build, which is
+ * what `next build` runs as; `next dev` shows everything.
+ */
+function buildAs(t: TestContext, mode: "production" | "development"): void {
+  // Next declares NODE_ENV read-only for application code (next/types/global.d.ts),
+  // which is right there and wrong here: a test has to be able to run the
+  // module under test as both a build and a dev server.
+  const env = process.env as { NODE_ENV?: string };
+  const previous = env.NODE_ENV;
+
+  env.NODE_ENV = mode;
+  t.after(() => {
+    env.NODE_ENV = previous;
+  });
 }
 
 /** Counts reads of markdown files, ignoring anything else the runtime reads. */
@@ -369,6 +400,74 @@ describe("caching", () => {
       markdownReads() > afterFirstAttempt,
       "expected the failed post to be read again rather than served from cache",
     );
+  });
+});
+
+describe("drafts and future-dated posts", () => {
+  test("a production build leaves out drafts and posts dated ahead", async (t) => {
+    const root = useTemporarySite({
+      "published.md": datedPost("Published", daysFromToday(-1)),
+      "today.md": datedPost("Today", daysFromToday(0)),
+      "draft.md": datedPost("Draft", daysFromToday(-1), "true"),
+      "scheduled.md": datedPost("Scheduled", daysFromToday(1)),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    buildAs(t, "production");
+
+    assert.deepEqual(
+      getSortedPosts().map((entry) => entry.title).sort(),
+      ["Published", "Today"],
+      "a post dated today is published; a draft and tomorrow's post are not",
+    );
+    assert.deepEqual(getPostSlugs().sort(), ["published", "today"]);
+    assert.equal(await getPostBySlug("draft"), null);
+    assert.equal(await getPostBySlug("scheduled"), null);
+  });
+
+  test("development shows everything, so work in progress can be previewed", async (t) => {
+    const root = useTemporarySite({
+      "published.md": datedPost("Published", daysFromToday(-1)),
+      "draft.md": datedPost("Draft", daysFromToday(-1), "true"),
+      "scheduled.md": datedPost("Scheduled", daysFromToday(1)),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    buildAs(t, "development");
+
+    assert.deepEqual(getPostSlugs().sort(), ["draft", "published", "scheduled"]);
+    assert.equal((await getPostBySlug("draft"))?.title, "Draft");
+    assert.equal((await getPostBySlug("scheduled"))?.title, "Scheduled");
+  });
+
+  test("an excluded post is absent from tags and adjacent navigation", (t) => {
+    const root = useTemporarySite({
+      "older.md": datedPost("Older", daysFromToday(-2)),
+      "draft.md": datedPost("Draft", daysFromToday(-1), "true"),
+      "newer.md": datedPost("Newer", daysFromToday(0)),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    buildAs(t, "production");
+
+    // The draft sits between the two published posts by date, so it would show
+    // up as a neighbour if the filter only covered the listing pages. The
+    // sitemap, the feed and the tag archives all read the same two functions.
+    assert.equal(getAdjacentPosts("newer").next?.slug, "older");
+    assert.equal(getAdjacentPosts("older").prev?.slug, "newer");
+    assert.deepEqual(getAdjacentPosts("draft"), { prev: null, next: null });
+    assert.deepEqual(getAllTags(), []);
+  });
+
+  test("rejects a draft flag that is not a boolean", (t) => {
+    const root = useTemporarySite({
+      // Quoted, so YAML hands over the string "true" rather than a boolean.
+      "quoted.md": datedPost("Quoted", daysFromToday(-1), '"true"'),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    buildAs(t, "production");
+
+    assert.throws(() => getSortedPosts(), {
+      message:
+        'quoted.md: frontmatter "draft" must be true or false, received "true"',
+    });
   });
 });
 
