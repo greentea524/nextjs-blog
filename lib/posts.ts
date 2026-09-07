@@ -87,6 +87,25 @@ function readingMinutes(markdown: string): number {
   return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 }
 
+/**
+ * An unquoted `draft: true` is the only spelling that hides a post. A quoted
+ * "true" is a string, and silently publishing a post its author believed was
+ * hidden is the one failure worth being loud about.
+ */
+function parseDraft(value: unknown, fileName: string): boolean {
+  if (value === undefined) {
+    return false;
+  }
+
+  if (typeof value !== "boolean") {
+    throw new Error(
+      `${fileName}: frontmatter "draft" must be true or false, received ${JSON.stringify(value)}`,
+    );
+  }
+
+  return value;
+}
+
 function parseTags(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.filter((v): v is string => typeof v === "string" && v.trim() !== "");
@@ -94,7 +113,7 @@ function parseTags(value: unknown): string[] {
   return [];
 }
 
-type ParsedPost = { meta: PostMeta; content: string };
+type ParsedPost = { meta: PostMeta; content: string; draft: boolean };
 
 /**
  * Parsed frontmatter and body, keyed by absolute path.
@@ -131,7 +150,11 @@ function readPostFile(fileName: string): ParsedPost {
     tags: parseTags(data.tags),
   };
 
-  const parsed: ParsedPost = { meta, content };
+  const parsed: ParsedPost = {
+    meta,
+    content,
+    draft: parseDraft(data.draft, fileName),
+  };
   parsedPosts.set(fullPath, { mtimeMs, parsed });
 
   return parsed;
@@ -143,8 +166,32 @@ function postFileNames(): string[] {
     .filter((fileName) => fileName.endsWith(".md"));
 }
 
+/** Today's calendar date in UTC, matching how post dates are normalized. */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Whether a post belongs in the site being built.
+ *
+ * A draft, or a post dated after today, is left out of a production build but
+ * kept in `next dev`, so work in progress can be committed and previewed
+ * without going live. Every entry point reads posts through `getSortedPosts()`
+ * or `getPostBySlug()`, so filtering here covers the home page, tag archives,
+ * post pages, adjacent-post navigation, the sitemap, the feed and OG images
+ * alike.
+ */
+function isPublished(parsed: ParsedPost): boolean {
+  if (process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  return !parsed.draft && parsed.meta.date <= todayUtc();
+}
+
+/** Every slug that should be built, in the same order as `getSortedPosts()`. */
 export function getPostSlugs(): string[] {
-  return postFileNames().map((fileName) => fileName.replace(/\.md$/, ""));
+  return getSortedPosts().map((post) => post.slug);
 }
 
 /**
@@ -156,7 +203,9 @@ export function getPostSlugs(): string[] {
  */
 export function getSortedPosts(): PostMeta[] {
   return postFileNames()
-    .map((fileName) => readPostFile(fileName).meta)
+    .map((fileName) => readPostFile(fileName))
+    .filter(isPublished)
+    .map((parsed) => parsed.meta)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
@@ -349,6 +398,10 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   const fileName = `${slug}.md`;
 
   if (!postFileNames().includes(fileName)) {
+    return null;
+  }
+
+  if (!isPublished(readPostFile(fileName))) {
     return null;
   }
 
