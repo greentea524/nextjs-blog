@@ -94,9 +94,32 @@ function parseTags(value: unknown): string[] {
   return [];
 }
 
-function readPostFile(fileName: string) {
-  const slug = fileName.replace(/\.md$/, "");
+type ParsedPost = { meta: PostMeta; content: string };
+
+/**
+ * Parsed frontmatter and body, keyed by absolute path.
+ *
+ * `getSortedPosts()` runs once per page — home, tag aggregation, and adjacent
+ * post navigation on every post — so without this each file is read and parsed
+ * a number of times that grows with the number of posts. Entries carry the
+ * modification time they were parsed at, so a build parses each file exactly
+ * once while `next dev` still picks up an edit as soon as it lands.
+ *
+ * Cached values are handed out directly rather than copied. Nothing in the
+ * site mutates a post, and copying on every read would undo the saving.
+ */
+const parsedPosts = new Map<string, { mtimeMs: number; parsed: ParsedPost }>();
+
+function readPostFile(fileName: string): ParsedPost {
   const fullPath = path.join(postsDirectory(), fileName);
+  const { mtimeMs } = fs.statSync(fullPath);
+
+  const cached = parsedPosts.get(fullPath);
+  if (cached?.mtimeMs === mtimeMs) {
+    return cached.parsed;
+  }
+
+  const slug = fileName.replace(/\.md$/, "");
   const { data, content } = matter(fs.readFileSync(fullPath, "utf8"));
 
   const meta: PostMeta = {
@@ -108,7 +131,10 @@ function readPostFile(fileName: string) {
     tags: parseTags(data.tags),
   };
 
-  return { meta, content };
+  const parsed: ParsedPost = { meta, content };
+  parsedPosts.set(fullPath, { mtimeMs, parsed });
+
+  return parsed;
 }
 
 function postFileNames(): string[] {
@@ -296,13 +322,7 @@ const processor = unified()
   })
   .use(rehypeStringify);
 
-export async function getPostBySlug(slug: string): Promise<Post | null> {
-  const fileName = `${slug}.md`;
-
-  if (!postFileNames().includes(fileName)) {
-    return null;
-  }
-
+async function renderPost(fileName: string): Promise<Post> {
   const { meta, content } = readPostFile(fileName);
   // Shiki loads its themes and grammars asynchronously, so rendering a post is
   // async too. It all still happens during `next build`.
@@ -313,6 +333,41 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     contentHtml: String(file),
     toc: file.data.toc ?? [],
   };
+}
+
+/**
+ * Rendered posts, keyed and invalidated exactly like `parsedPosts` above.
+ *
+ * Highlighting is the expensive half of rendering, and a post page asks for
+ * its post twice — once for `generateMetadata`, once for the page itself.
+ * Storing the promise rather than the result also means two concurrent callers
+ * share one render instead of racing to do the same work twice.
+ */
+const renderedPosts = new Map<string, { mtimeMs: number; post: Promise<Post> }>();
+
+export async function getPostBySlug(slug: string): Promise<Post | null> {
+  const fileName = `${slug}.md`;
+
+  if (!postFileNames().includes(fileName)) {
+    return null;
+  }
+
+  const fullPath = path.join(postsDirectory(), fileName);
+  const { mtimeMs } = fs.statSync(fullPath);
+
+  const cached = renderedPosts.get(fullPath);
+  if (cached?.mtimeMs === mtimeMs) {
+    return cached.post;
+  }
+
+  const post = renderPost(fileName).catch((error: unknown) => {
+    // A failed render must not be pinned in the cache until the file changes.
+    renderedPosts.delete(fullPath);
+    throw error;
+  });
+  renderedPosts.set(fullPath, { mtimeMs, post });
+
+  return post;
 }
 
 export type AdjacentPosts = {
