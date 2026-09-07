@@ -150,8 +150,10 @@
   font-size: inherit;
 }
 
-/* rehype-pretty-code wraps each highlighted block in a figure. */
+/* rehype-pretty-code wraps each highlighted block in a figure, which doubles
+   as the positioning context for its copy button. */
 .prose figure[data-rehype-pretty-code-figure] {
+  position: relative;
   margin: 0;
 }
 

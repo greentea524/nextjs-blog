@@ -10,6 +10,7 @@ import {
 } from "@/lib/posts";
 import { OG_SIZE } from "@/lib/og";
 import { feedAlternates, postUrl, siteConfig, siteUrl } from "@/lib/site";
+import CopyCodeButtons from "@/app/components/CopyCodeButtons";
 import JsonLd from "@/app/components/JsonLd";
 import TableOfContents from "@/app/components/TableOfContents";
 import styles from "./page.module.css";
@@ -132,9 +133,11 @@ export default async function PostPage({ params }: PostPageProps) {
         <TableOfContents toc={post.toc} />
 
         <div
+          id="post-body"
           className={styles.prose}
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
+        <CopyCodeButtons targetId="post-body" />
       </article>
 
       {/* Author Bio */}

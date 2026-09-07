@@ -1,0 +1,65 @@
+/* Anchored to the figure, which the post stylesheet makes a positioned box. */
+.host {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+.button {
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-code-border);
+  border-radius: 6px;
+  cursor: pointer;
+  /* Faint until wanted, but never invisible: a button that only exists on
+     hover cannot be found on a touch screen. */
+  opacity: 0.6;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease;
+}
+
+.button:hover,
+.button:focus-visible {
+  opacity: 1;
+  color: var(--color-text);
+}
+
+/* Hovering anywhere over the block brings its button forward. */
+figure:hover .button {
+  opacity: 1;
+}
+
+.button[data-state="copied"] {
+  opacity: 1;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.button[data-state="failed"] {
+  opacity: 1;
+  color: var(--color-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}
+
+/* Announced by screen readers, invisible to everyone else. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
