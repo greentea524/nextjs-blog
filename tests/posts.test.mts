@@ -329,6 +329,15 @@ describe("getAdjacentPosts", () => {
 });
 
 describe("formatDate", () => {
+  test("is the one in lib/format.ts, not a second copy", async () => {
+    // The client-side filter imports lib/format.ts directly, because pulling
+    // lib/posts.ts into the browser bundle would drag `node:fs` along. Two
+    // copies of the formatter would be free to drift apart.
+    const format = await import("../lib/format.ts");
+
+    assert.equal(formatDate, format.formatDate);
+  });
+
   test("renders a calendar date in UTC", () => {
     // Written as January 15 even though the pinned timezone is still on
     // January 14 at UTC midnight.

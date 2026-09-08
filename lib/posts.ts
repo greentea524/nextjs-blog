@@ -15,6 +15,14 @@ import type { VFile } from "vfile";
 import { tagSlug } from "./tags.ts";
 
 /**
+ * Re-exported so a server component can take its date formatting from the same
+ * module it takes posts from. The implementation lives in lib/format.ts because
+ * the home page filter is a client component: importing this module there would
+ * drag `node:fs` into the browser bundle.
+ */
+export { formatDate } from "./format.ts";
+
+/**
  * Resolved per call rather than once at import, so a test can point the reader
  * at a fixture directory by changing the working directory. A build never
  * changes it.
@@ -443,16 +451,4 @@ export function getAdjacentPosts(slug: string): AdjacentPosts {
     prev: index > 0 ? posts[index - 1] : null,
     next: index < posts.length - 1 ? posts[index + 1] : null,
   };
-}
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
-
-/** Renders YYYY-MM-DD as "January 15, 2026", pinned to UTC for stable output. */
-export function formatDate(date: string): string {
-  return dateFormatter.format(new Date(`${date}T00:00:00Z`));
 }
