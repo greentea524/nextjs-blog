@@ -103,6 +103,7 @@ const {
   getAllTags,
   getPostBySlug,
   getPostSlugs,
+  getSearchIndex,
   getSortedPosts,
 } = await import("../lib/posts.ts");
 
@@ -477,6 +478,53 @@ describe("drafts and future-dated posts", () => {
       message:
         'quoted.md: frontmatter "draft" must be true or false, received "true"',
     });
+  });
+});
+
+describe("getSearchIndex", () => {
+  test("carries the body text of every post, keyed by slug", () => {
+    useFixture("site");
+
+    const index = getSearchIndex();
+
+    assert.deepEqual(Object.keys(index).sort(), [
+      "alpha-post",
+      "beta-post",
+      "gamma-post",
+      "long-post",
+      "short-post",
+    ]);
+    assert.match(index["alpha-post"], /Body text for the alpha post\./);
+  });
+
+  test("indexes code, which is half of what a reader searches for", () => {
+    useFixture("site");
+
+    // alpha-post carries a fenced `const highlighted: boolean = true;`.
+    assert.match(getSearchIndex()["alpha-post"], /const highlighted: boolean/);
+  });
+
+  test("keeps markup out and collapses whitespace", () => {
+    useFixture("site");
+
+    const text = getSearchIndex()["alpha-post"];
+
+    assert.doesNotMatch(text, /<[a-z/]/i, "expected no markup in the index");
+    assert.doesNotMatch(text, /\s\s|\n/, "expected whitespace to be collapsed");
+    // Heading text is part of the body a reader searches.
+    assert.match(text, /Shared heading/);
+  });
+
+  test("leaves out drafts and posts dated ahead, like every other reader", (t) => {
+    const root = useTemporarySite({
+      "published.md": datedPost("Published", daysFromToday(-1)),
+      "draft.md": datedPost("Draft", daysFromToday(-1), "true"),
+      "scheduled.md": datedPost("Scheduled", daysFromToday(1)),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    buildAs(t, "production");
+
+    assert.deepEqual(Object.keys(getSearchIndex()), ["published"]);
   });
 });
 

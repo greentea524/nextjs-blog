@@ -29,6 +29,16 @@ export function siteUrl(path: string): string {
   return `${siteConfig.url}${path}`;
 }
 
+/**
+ * Site-root-relative path, including the project sub-path.
+ *
+ * Client code cannot fetch `siteUrl()`: that is an absolute URL to the
+ * deployed origin, which is not where a dev server or a local preview lives.
+ */
+export function sitePath(path: string): string {
+  return `${new URL(siteConfig.url).pathname}${path}`;
+}
+
 /** Canonical absolute URL for a post, matching the exported directory index. */
 export function postUrl(slug: string): string {
   return siteUrl(`/posts/${slug}/`);

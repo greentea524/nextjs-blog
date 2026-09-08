@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import type { PostMeta } from "@/lib/posts";
+import { sitePath } from "@/lib/site";
 import { tagSlug } from "@/lib/tags";
 import styles from "./PostFilter.module.css";
+
+/** Built by app/search-index.json/route.ts: post body text, keyed by slug. */
+const SEARCH_INDEX_URL = sitePath("/search-index.json");
 
 type TagCount = {
   tag: string;
@@ -20,24 +24,80 @@ type PostFilterProps = {
 export default function PostFilter({ posts, allTags }: PostFilterProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
+  const [bodyText, setBodyText] = useState<Record<string, string> | null>(null);
+  const indexRequested = useRef(false);
+
+  /**
+   * Fetched on the reader's first keystroke rather than with the page, so the
+   * home page costs nothing extra for everyone who never searches.
+   */
+  function loadSearchIndex(): void {
+    if (indexRequested.current) {
+      return;
+    }
+
+    indexRequested.current = true;
+
+    fetch(SEARCH_INDEX_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`search index: ${response.status}`);
+        }
+        return response.json() as Promise<Record<string, string>>;
+      })
+      .then((index) => {
+        // Lowercased once here instead of on every keystroke.
+        const lowered: Record<string, string> = {};
+
+        for (const [slug, text] of Object.entries(index)) {
+          lowered[slug] = text.toLowerCase();
+        }
+
+        setBodyText(lowered);
+      })
+      .catch(() => {
+        // Body search is an enhancement. Title, excerpt and tag matching carry
+        // on working without it, so a failed fetch is not worth reporting.
+      });
+  }
+
+  function handleSearchChange(value: string): void {
+    setSearchQuery(value);
+
+    if (value.trim() !== "") {
+      loadSearchIndex();
+    }
+  }
 
   const filteredPosts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const visible = posts.filter(
+      (post) => selectedTag === "all" || post.tags.includes(selectedTag),
+    );
 
-    return posts.filter((post) => {
-      const matchesTag =
-        selectedTag === "all" || post.tags.includes(selectedTag);
+    if (!q) {
+      return visible;
+    }
 
-      if (!matchesTag) return false;
-      if (!q) return true;
+    const ranked: Array<{ post: PostMeta; rank: number }> = [];
 
+    for (const post of visible) {
       const inTitle = post.title.toLowerCase().includes(q);
       const inExcerpt = post.excerpt.toLowerCase().includes(q);
       const inTags = post.tags.some((t) => t.toLowerCase().includes(q));
 
-      return inTitle || inExcerpt || inTags;
-    });
-  }, [posts, searchQuery, selectedTag]);
+      if (inTitle || inExcerpt || inTags) {
+        ranked.push({ post, rank: 0 });
+      } else if (bodyText?.[post.slug]?.includes(q)) {
+        // A body match still counts, but below the matches a reader can see on
+        // the card itself.
+        ranked.push({ post, rank: 1 });
+      }
+    }
+
+    // Stable, so posts keep their date order within a rank.
+    return ranked.sort((a, b) => a.rank - b.rank).map((entry) => entry.post);
+  }, [posts, searchQuery, selectedTag, bodyText]);
 
   const handleReset = () => {
     setSearchQuery("");
@@ -64,9 +124,9 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search notes by title, topic, or keyword..."
+            placeholder="Search notes by title, topic, or anything in the text..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             aria-label="Search articles"
           />
           {searchQuery && (
