@@ -88,6 +88,13 @@ the server-rendered archives have to derive the same URL.
 `formatDate` is split for the same reason and lives in `lib/format.ts`, which
 `lib/posts.ts` re-exports — one implementation, reachable from both sides.
 
+The home page search box matches post bodies as well as titles, excerpts and
+tags. Body text is emitted at build time as `search-index.json` (48 KB, 20 KB
+over the wire) and fetched on the reader's first keystroke, so the page costs
+nothing extra for anyone who never searches. If that fetch fails, searching
+falls back to titles, excerpts and tags. Matches a reader can see on the card
+rank above body-only matches.
+
 All three frontmatter fields are required and validated at build time: a
 missing or malformed field fails the build with the filename in the error
 rather than rendering `undefined` into a meta tag. Reading time is derived from

@@ -431,6 +431,57 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   return post;
 }
 
+/**
+ * Markdown node types that carry text a reader might search for. Code is in
+ * deliberately: a library name, an API, or an error message is exactly what
+ * someone reaches for the search box to find.
+ */
+const TEXTUAL_NODES = new Set(["text", "inlineCode", "code"]);
+
+/**
+ * The searchable text of a post body.
+ *
+ * Taken from the markdown AST rather than the rendered HTML: the text is the
+ * same either way, and this route skips both the highlighting and the tag
+ * stripping that going through HTML would need.
+ */
+function plainText(markdown: string): string {
+  let text = "";
+
+  visit(processor.parse(markdown), (node) => {
+    if (
+      TEXTUAL_NODES.has(node.type) &&
+      "value" in node &&
+      typeof node.value === "string"
+    ) {
+      text += `${node.value} `;
+    }
+  });
+
+  return text.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Body text for every published post, keyed by slug, for the search index the
+ * home page fetches on the reader's first keystroke.
+ *
+ * Titles, excerpts and tags are deliberately absent: the home page already
+ * holds those, and repeating them here would pay for the same strings twice.
+ */
+export function getSearchIndex(): Record<string, string> {
+  const index: Record<string, string> = {};
+
+  for (const fileName of postFileNames()) {
+    const parsed = readPostFile(fileName);
+
+    if (isPublished(parsed)) {
+      index[parsed.meta.slug] = plainText(parsed.content);
+    }
+  }
+
+  return index;
+}
+
 export type AdjacentPosts = {
   prev: PostMeta | null;
   next: PostMeta | null;
