@@ -85,6 +85,9 @@ for heading anchors in `lib/posts.ts`, because the home page filter is a
 client component and `lib/posts.ts` reads the filesystem. Both the filter and
 the server-rendered archives have to derive the same URL.
 
+`formatDate` is split for the same reason and lives in `lib/format.ts`, which
+`lib/posts.ts` re-exports — one implementation, reachable from both sides.
+
 All three frontmatter fields are required and validated at build time: a
 missing or malformed field fails the build with the filename in the error
 rather than rendering `undefined` into a meta tag. Reading time is derived from
