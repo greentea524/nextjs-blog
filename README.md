@@ -162,6 +162,14 @@ ever switched to the legacy build-from-branch source.
 - Markdown is rendered without sanitization. Posts are local files written by
   the site author, so the input is trusted — reconsider if content ever comes
   from elsewhere.
+- The home page groups posts by year on a timeline rail and shows six at a
+  time. The page number lives in the query string (`?page=2`), so a page can be
+  linked and Back works, and changing a filter returns to the first page.
+  `useSearchParams` would read that param for us, but in an exported site it
+  forces the list to be client-rendered — the posts would leave the static
+  HTML — so the History API does it instead. Only the first page's cards are in
+  the home page's HTML; every post stays in the sitemap, the feed, the tag
+  archives and the home page's JSON-LD.
 - Each post page lists up to three related notes, ranked by how many tags they
   share with it and then by recency. Where nothing overlaps it falls back to
   recent posts rather than showing an empty section — most posts here share a

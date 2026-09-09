@@ -1,12 +1,68 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import {
+  POSTS_PER_PAGE,
+  clampPage,
+  groupByYear,
+  pageCount,
+  pageSlice,
+} from "@/lib/archive";
 import { formatDate } from "@/lib/format";
 import type { PostMeta } from "@/lib/posts";
 import { sitePath } from "@/lib/site";
 import { tagSlug } from "@/lib/tags";
 import styles from "./PostFilter.module.css";
+
+const PAGE_PARAM = "page";
+/** Fired after a pushState, which does not raise popstate on its own. */
+const PAGE_EVENT = "postfilter:page";
+
+function readPageFromUrl(): number {
+  const raw = new URLSearchParams(window.location.search).get(PAGE_PARAM);
+
+  return raw === null ? 1 : Number.parseInt(raw, 10);
+}
+
+function subscribeToPage(onChange: () => void): () => void {
+  window.addEventListener("popstate", onChange);
+  window.addEventListener(PAGE_EVENT, onChange);
+
+  return () => {
+    window.removeEventListener("popstate", onChange);
+    window.removeEventListener(PAGE_EVENT, onChange);
+  };
+}
+
+/**
+ * Writes the page into the query string.
+ *
+ * The URL is the source of truth for which page is showing, which is what
+ * makes Back and Forward work and a link to page 2 shareable. `useSearchParams`
+ * would read it for us, but in an exported site it forces everything up to the
+ * nearest Suspense boundary to be client-rendered — the post list would leave
+ * the static HTML entirely. The History API costs nothing and keeps it there.
+ */
+function writePageToUrl(page: number, replace: boolean): void {
+  const url = new URL(window.location.href);
+
+  if (page <= 1) {
+    url.searchParams.delete(PAGE_PARAM);
+  } else {
+    url.searchParams.set(PAGE_PARAM, String(page));
+  }
+
+  const next = `${url.pathname}${url.search}${url.hash}`;
+
+  if (replace) {
+    window.history.replaceState(null, "", next);
+  } else {
+    window.history.pushState(null, "", next);
+  }
+
+  window.dispatchEvent(new Event(PAGE_EVENT));
+}
 
 /** Built by app/search-index.json/route.ts: post body text, keyed by slug. */
 const SEARCH_INDEX_URL = sitePath("/search-index.json");
@@ -26,6 +82,14 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
   const [selectedTag, setSelectedTag] = useState("all");
   const [bodyText, setBodyText] = useState<Record<string, string> | null>(null);
   const indexRequested = useRef(false);
+  // Server-rendered pages always show the first one: an exported page is the
+  // same HTML whatever the query string says, so page 1 is the only honest
+  // starting point. React swaps in the URL's page after hydration.
+  const requestedPage = useSyncExternalStore(
+    subscribeToPage,
+    readPageFromUrl,
+    () => 1,
+  );
 
   /**
    * Fetched on the reader's first keystroke rather than with the page, so the
@@ -61,12 +125,35 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
       });
   }
 
+  /**
+   * Any change to the filters puts the reader back on the first page: page 3 of
+   * a list that just shrank to four posts is a dead end. It replaces rather
+   * than pushes, so Back still leaves the page rather than walking through
+   * every keystroke.
+   */
+  function resetToFirstPage(): void {
+    if (readPageFromUrl() > 1) {
+      writePageToUrl(1, true);
+    }
+  }
+
   function handleSearchChange(value: string): void {
     setSearchQuery(value);
+    resetToFirstPage();
 
     if (value.trim() !== "") {
       loadSearchIndex();
     }
+  }
+
+  function handleTagChange(tag: string): void {
+    setSelectedTag(tag);
+    resetToFirstPage();
+  }
+
+  function goToPage(page: number): void {
+    writePageToUrl(page, false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   const filteredPosts = useMemo(() => {
@@ -99,9 +186,15 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
     return ranked.sort((a, b) => a.rank - b.rank).map((entry) => entry.post);
   }, [posts, searchQuery, selectedTag, bodyText]);
 
+  const totalPages = pageCount(filteredPosts.length);
+  const currentPage = clampPage(requestedPage, filteredPosts.length);
+  const visiblePosts = pageSlice(filteredPosts, currentPage);
+  const years = groupByYear(visiblePosts);
+
   const handleReset = () => {
     setSearchQuery("");
     setSelectedTag("all");
+    resetToFirstPage();
   };
 
   return (
@@ -133,7 +226,7 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
             <button
               type="button"
               className={styles.clearButton}
-              onClick={() => setSearchQuery("")}
+              onClick={() => handleSearchChange("")}
               aria-label="Clear search"
             >
               ✕
@@ -147,7 +240,7 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
             className={`${styles.tagPill} ${
               selectedTag === "all" ? styles.activeTagPill : ""
             }`}
-            onClick={() => setSelectedTag("all")}
+            onClick={() => handleTagChange("all")}
           >
             All <span className={styles.tagCount}>({posts.length})</span>
           </button>
@@ -158,7 +251,9 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
               className={`${styles.tagPill} ${
                 selectedTag === tag ? styles.activeTagPill : ""
               }`}
-              onClick={() => setSelectedTag(selectedTag === tag ? "all" : tag)}
+              onClick={() =>
+                handleTagChange(selectedTag === tag ? "all" : tag)
+              }
             >
               {tag} <span className={styles.tagCount}>({count})</span>
             </button>
@@ -168,7 +263,11 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
 
       <div className={styles.statusRow}>
         <span>
-          Showing {filteredPosts.length} of {posts.length}{" "}
+          {totalPages > 1
+            ? `Showing ${(currentPage - 1) * POSTS_PER_PAGE + 1}–${
+                (currentPage - 1) * POSTS_PER_PAGE + visiblePosts.length
+              } of ${filteredPosts.length}`
+            : `Showing ${filteredPosts.length} of ${posts.length}`}{" "}
           {posts.length === 1 ? "note" : "notes"}
         </span>
         {/* The filter above is instant but has no URL; this is the shareable,
@@ -210,54 +309,115 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
           </button>
         </div>
       ) : (
-        <ul className={styles.postList}>
-          {filteredPosts.map((post) => (
-            <li key={post.slug}>
-              <article className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <h2 className={styles.cardTitle}>
-                    <Link
-                      href={`/posts/${post.slug}`}
-                      className={styles.cardLink}
-                    >
-                      {post.title}
-                    </Link>
-                  </h2>
-                  <span className={styles.cardArrow} aria-hidden="true">
-                    →
-                  </span>
-                </div>
+        <>
+          {years.map((group) => (
+            <section
+              key={group.year}
+              className={styles.yearGroup}
+              aria-labelledby={`year-${group.year}`}
+            >
+              <h2 id={`year-${group.year}`} className={styles.yearHeading}>
+                {group.year}
+              </h2>
+              <ul className={styles.postList}>
+                  {group.posts.map((post) => (
+                <li key={post.slug}>
+                  <article className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      {/* h3: the year heading above this group is the h2. */}
+                      <h3 className={styles.cardTitle}>
+                        <Link
+                          href={`/posts/${post.slug}`}
+                          className={styles.cardLink}
+                        >
+                          {post.title}
+                        </Link>
+                      </h3>
+                      <span className={styles.cardArrow} aria-hidden="true">
+                        →
+                      </span>
+                    </div>
 
-                <div className={styles.metaRow}>
-                  <time dateTime={post.date}>{formatDate(post.date)}</time>
-                  <span>·</span>
-                  <span>{post.readingMinutes} min read</span>
-                </div>
+                    <div className={styles.metaRow}>
+                      <time dateTime={post.date}>{formatDate(post.date)}</time>
+                      <span>·</span>
+                      <span>{post.readingMinutes} min read</span>
+                    </div>
 
-                {post.tags.length > 0 && (
-                  <div className={styles.tagsWrapper}>
-                    {post.tags.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        className={styles.cardTag}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setSelectedTag(t);
-                        }}
-                        title={`Filter by ${t}`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    {post.tags.length > 0 && (
+                      <div className={styles.tagsWrapper}>
+                        {post.tags.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            className={styles.cardTag}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleTagChange(t);
+                            }}
+                            title={`Filter by ${t}`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                <p className={styles.excerpt}>{post.excerpt}</p>
-              </article>
-            </li>
+                    <p className={styles.excerpt}>{post.excerpt}</p>
+                  </article>
+                </li>
+              ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+
+          {totalPages > 1 && (
+            <nav className={styles.pagination} aria-label="Pagination">
+              <button
+                type="button"
+                className={styles.pageStep}
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                ← Previous
+              </button>
+
+              <ul className={styles.pageList}>
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                  (page) => (
+                    <li key={page}>
+                      {/* A real link, so it can be opened in a new tab or
+                          shared; the handler keeps the click on this page. */}
+                      <a
+                        href={page === 1 ? "./" : `./?page=${page}`}
+                        className={`${styles.pageLink} ${
+                          page === currentPage ? styles.pageCurrent : ""
+                        }`}
+                        aria-current={page === currentPage ? "page" : undefined}
+                        aria-label={`Page ${page}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          goToPage(page);
+                        }}
+                      >
+                        {page}
+                      </a>
+                    </li>
+                  ),
+                )}
+              </ul>
+
+              <button
+                type="button"
+                className={styles.pageStep}
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next →
+              </button>
+            </nav>
+          )}
+        </>
       )}
     </div>
   );
