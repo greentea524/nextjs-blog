@@ -298,11 +298,27 @@
 
 .metaRow {
   display: flex;
+  /* Two badges and a narrow card: let them wrap rather than squash. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   color: var(--color-text-muted);
   font-size: 0.8125rem;
+}
+
+/*
+ * A pill, where the tags below are rounded rectangles. Both carry a word or
+ * two of metadata, but the tags are buttons and these are not — the shape is
+ * what says so before the cursor gets a chance to.
+ */
+.metaBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
 }
 
 .tagsWrapper {
@@ -323,7 +339,9 @@
   background-color: var(--color-code-background);
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .cardTag:hover {
