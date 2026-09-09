@@ -15,6 +15,9 @@ import { sitePath } from "@/lib/site";
 import { tagSlug } from "@/lib/tags";
 import styles from "./PostFilter.module.css";
 
+/** Tags shown before the rest are folded behind the "more" button. */
+const COLLAPSED_TAG_COUNT = 8;
+
 const PAGE_PARAM = "page";
 /** Fired after a pushState, which does not raise popstate on its own. */
 const PAGE_EVENT = "postfilter:page";
@@ -80,6 +83,7 @@ type PostFilterProps = {
 export default function PostFilter({ posts, allTags }: PostFilterProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
+  const [showAllTags, setShowAllTags] = useState(false);
   const [bodyText, setBodyText] = useState<Record<string, string> | null>(null);
   const indexRequested = useRef(false);
   // Server-rendered pages always show the first one: an exported page is the
@@ -186,6 +190,35 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
     return ranked.sort((a, b) => a.rank - b.rank).map((entry) => entry.post);
   }, [posts, searchQuery, selectedTag, bodyText]);
 
+  /**
+   * The most-used tags, with the rest behind the toggle. `allTags` arrives
+   * sorted by frequency, so the head is the useful end of the list.
+   */
+  const shownTags = useMemo(() => {
+    if (showAllTags) {
+      return allTags;
+    }
+
+    const head = allTags.slice(0, COLLAPSED_TAG_COUNT);
+
+    // Whatever is selected stays on screen even when it sorts below the cut:
+    // the filter in force should always be visible, and always switchable off.
+    if (
+      selectedTag !== "all" &&
+      !head.some((entry) => entry.tag === selectedTag)
+    ) {
+      const selected = allTags.find((entry) => entry.tag === selectedTag);
+
+      if (selected) {
+        return [...head, selected];
+      }
+    }
+
+    return head;
+  }, [allTags, selectedTag, showAllTags]);
+
+  const hiddenTagCount = allTags.length - shownTags.length;
+
   const totalPages = pageCount(filteredPosts.length);
   const currentPage = clampPage(requestedPage, filteredPosts.length);
   const visiblePosts = pageSlice(filteredPosts, currentPage);
@@ -234,7 +267,14 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
           )}
         </div>
 
-        <div className={styles.tagBar} role="tablist" aria-label="Filter by topic">
+        {/* A group, not a tablist: these are filters with no tab panels behind
+            them, and the toggle at the end is not a filter at all. */}
+        <div
+          id="topic-filters"
+          className={styles.tagBar}
+          role="group"
+          aria-label="Filter by topic"
+        >
           <button
             type="button"
             className={`${styles.tagPill} ${
@@ -244,7 +284,7 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
           >
             All <span className={styles.tagCount}>({posts.length})</span>
           </button>
-          {allTags.map(({ tag, count }) => (
+          {shownTags.map(({ tag, count }) => (
             <button
               key={tag}
               type="button"
@@ -258,6 +298,18 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
               {tag} <span className={styles.tagCount}>({count})</span>
             </button>
           ))}
+
+          {(hiddenTagCount > 0 || showAllTags) && (
+            <button
+              type="button"
+              className={styles.tagToggle}
+              onClick={() => setShowAllTags((shown) => !shown)}
+              aria-expanded={showAllTags}
+              aria-controls="topic-filters"
+            >
+              {showAllTags ? "Show fewer topics" : `+${hiddenTagCount} more`}
+            </button>
+          )}
         </div>
       </div>
 
