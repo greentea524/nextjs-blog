@@ -339,9 +339,12 @@ export default function PostFilter({ posts, allTags }: PostFilterProps) {
                     </div>
 
                     <div className={styles.metaRow}>
-                      <time dateTime={post.date}>{formatDate(post.date)}</time>
-                      <span>·</span>
-                      <span>{post.readingMinutes} min read</span>
+                      <time className={styles.metaBadge} dateTime={post.date}>
+                        {formatDate(post.date)}
+                      </time>
+                      <span className={styles.metaBadge}>
+                        {post.readingMinutes} min read
+                      </span>
                     </div>
 
                     {post.tags.length > 0 && (
