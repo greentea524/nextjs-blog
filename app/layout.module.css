@@ -46,6 +46,11 @@
   font-size: 0.875rem;
 }
 
+/* Pushes the theme toggle to the end of the header row. */
+.headerInner > button {
+  margin-left: auto;
+}
+
 .main {
   flex: 1;
   padding-block: var(--space-12) var(--space-8);

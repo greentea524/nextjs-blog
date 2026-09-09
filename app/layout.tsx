@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { OG_SIZE } from "@/lib/og";
 import { feedAlternates, siteConfig } from "@/lib/site";
+import { THEME_SCRIPT } from "@/lib/theme";
+import ThemeToggle from "@/app/components/ThemeToggle";
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -37,7 +39,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    // The script below writes data-theme onto this element before React
+    // hydrates, which is a mismatch React should not warn about.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Runs while the head is parsed, so a stored theme is applied before
+            the first paint rather than after it. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <div className={styles.shell}>
           <header className={styles.header}>
@@ -48,6 +57,7 @@ export default function RootLayout({
                 </Link>
               </p>
               <p className={styles.tagline}>Notes on building for the web</p>
+              <ThemeToggle />
             </div>
           </header>
 

@@ -2,21 +2,57 @@
   color-scheme: light;
   --content-width: 44rem;
 
-  --color-text: #1a1a1a;
-  --color-text-muted: #52525b;
-  --color-background: #fdfdfc;
-  --color-surface: #ffffff;
-  --color-border: #e4e4e7;
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
+  /*
+   * Both palettes are written out once, here. The rules below only re-point
+   * the --color-* tokens at one set or the other, so no colour is ever
+   * repeated and every other stylesheet reads --color-* without knowing that
+   * themes exist.
+   */
+  --light-text: #1a1a1a;
+  --light-text-muted: #52525b;
+  --light-background: #fdfdfc;
+  --light-surface: #ffffff;
+  --light-border: #e4e4e7;
+  --light-accent: #2563eb;
+  --light-accent-hover: #1d4ed8;
+  --light-accent-wash: rgba(37, 99, 235, 0.06);
+  --light-code-background: #f4f4f5;
+  --light-code-surface: #f1f1f4;
+  --light-code-border: #e0e0e6;
+  --light-quote-surface: #f5f7fd;
+  --light-row-alt: #f8f8f9;
+
+  --dark-text: #f4f4f5;
+  --dark-text-muted: #a1a1aa;
+  --dark-background: #09090b;
+  --dark-surface: #121215;
+  --dark-border: #27272a;
+  --dark-accent: #38bdf8;
+  --dark-accent-hover: #7dd3fc;
+  --dark-accent-wash: rgba(56, 189, 248, 0.08);
+  --dark-code-background: #18181b;
+  --dark-code-surface: #141418;
+  --dark-code-border: #2b2b31;
+  --dark-quote-surface: #0d1519;
+  --dark-row-alt: #101013;
+
+  --color-text: var(--light-text);
+  --color-text-muted: var(--light-text-muted);
+  --color-background: var(--light-background);
+  --color-surface: var(--light-surface);
+  --color-border: var(--light-border);
+  --color-accent: var(--light-accent);
+  --color-accent-hover: var(--light-accent-hover);
+  /* Accent at low opacity, for a selected row or an active link. */
+  --color-accent-wash: var(--light-accent-wash);
   /* Inline code, chips, and other small tinted surfaces. */
-  --color-code-background: #f4f4f5;
+  --color-code-background: var(--light-code-background);
   /* Code blocks sit a step deeper than the page, with their own border. */
-  --color-code-surface: #f1f1f4;
-  --color-code-border: #e0e0e6;
+  --color-code-surface: var(--light-code-surface);
+  --color-code-border: var(--light-code-border);
   /* Accent-tinted quote panel and the alternating table row. */
-  --color-quote-surface: #f5f7fd;
-  --color-row-alt: #f8f8f9;
+  --color-quote-surface: var(--light-quote-surface);
+  --color-row-alt: var(--light-row-alt);
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
@@ -31,23 +67,51 @@
   --space-12: 3rem;
 }
 
+/*
+ * With nothing stored, the operating system decides — including when
+ * JavaScript never runs, which is why this stays a media query rather than
+ * something the toggle resolves. The :not() is what lets an explicit "light"
+ * win: without it, a reader on a dark OS could never choose light.
+ *
+ * The two dark blocks below assign the same tokens and have to stay in step.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --color-text: #f4f4f5;
-    --color-text-muted: #a1a1aa;
-    --color-background: #09090b;
-    --color-surface: #121215;
-    --color-border: #27272a;
-    --color-accent: #38bdf8;
-    --color-accent-hover: #7dd3fc;
-    --color-code-background: #18181b;
-    --color-code-surface: #141418;
-    --color-code-border: #2b2b31;
-    --color-quote-surface: #0d1519;
-    --color-row-alt: #101013;
+    --color-text: var(--dark-text);
+    --color-text-muted: var(--dark-text-muted);
+    --color-background: var(--dark-background);
+    --color-surface: var(--dark-surface);
+    --color-border: var(--dark-border);
+    --color-accent: var(--dark-accent);
+    --color-accent-hover: var(--dark-accent-hover);
+    --color-accent-wash: var(--dark-accent-wash);
+    --color-code-background: var(--dark-code-background);
+    --color-code-surface: var(--dark-code-surface);
+    --color-code-border: var(--dark-code-border);
+    --color-quote-surface: var(--dark-quote-surface);
+    --color-row-alt: var(--dark-row-alt);
   }
+}
+
+/* An explicit choice, set on <html> before first paint by the layout script. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-text: var(--dark-text);
+  --color-text-muted: var(--dark-text-muted);
+  --color-background: var(--dark-background);
+  --color-surface: var(--dark-surface);
+  --color-border: var(--dark-border);
+  --color-accent: var(--dark-accent);
+  --color-accent-hover: var(--dark-accent-hover);
+  --color-accent-wash: var(--dark-accent-wash);
+  --color-code-background: var(--dark-code-background);
+  --color-code-surface: var(--dark-code-surface);
+  --color-code-border: var(--dark-code-border);
+  --color-quote-surface: var(--dark-quote-surface);
+  --color-row-alt: var(--dark-row-alt);
 }
 
 *,

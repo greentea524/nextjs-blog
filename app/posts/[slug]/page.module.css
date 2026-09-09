@@ -168,9 +168,13 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .prose pre span {
+  :root:not([data-theme="light"]) .prose pre span {
     color: var(--shiki-dark, inherit);
   }
+}
+
+:root[data-theme="dark"] .prose pre span {
+  color: var(--shiki-dark, inherit);
 }
 
 .tableWrapper,
