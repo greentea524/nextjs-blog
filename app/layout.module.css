@@ -12,8 +12,22 @@
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  /* Above the post content, including the copy buttons that sit over code. */
+  z-index: 10;
   border-bottom: 1px solid var(--color-border);
+  /* Opaque by default: without blur, a translucent header over scrolling text
+     is unreadable, so the glass is opt-in on support. */
   background-color: var(--color-surface);
+}
+
+@supports (backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)) {
+  .header {
+    background-color: var(--color-surface-translucent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
 }
 
 .headerInner {
@@ -46,9 +60,40 @@
   font-size: 0.875rem;
 }
 
-/* Pushes the theme toggle to the end of the header row. */
-.headerInner > button {
+/* Everything on the right of the header row. */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-left: auto;
+}
+
+.iconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.iconLink:hover,
+.iconLink:focus-visible {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+/*
+ * The tagline is decoration, and dropping it on narrow screens keeps the
+ * header one row tall at every width — which is what lets a single
+ * scroll-margin clear it when a link jumps to a heading.
+ */
+@media (max-width: 30rem) {
+  .tagline {
+    display: none;
+  }
 }
 
 .main {

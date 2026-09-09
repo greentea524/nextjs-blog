@@ -68,14 +68,18 @@
   margin-top: var(--space-12);
   margin-bottom: var(--space-4);
   font-size: 1.5rem;
-  scroll-margin-top: 1.5rem;
+  /* Clears the sticky header, so a link from the contents lands on the
+     heading rather than behind it. */
+  scroll-margin-top: 5rem;
 }
 
 .prose h3 {
   margin-top: var(--space-8);
   margin-bottom: var(--space-3);
   font-size: 1.25rem;
-  scroll-margin-top: 1.5rem;
+  /* Clears the sticky header, so a link from the contents lands on the
+     heading rather than behind it. */
+  scroll-margin-top: 5rem;
 }
 
 .prose p,

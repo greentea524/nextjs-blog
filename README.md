@@ -175,6 +175,11 @@ ever switched to the legacy build-from-branch source.
   recent posts rather than showing an empty section — most posts here share a
   publication date, which is what makes the chronological prev/next links a
   poor guide on their own.
+- The header sticks to the top and frosts what scrolls under it. The blur is
+  behind an `@supports` check: without it the header stays fully opaque, since
+  a translucent unblurred bar over moving text is unreadable. Headings carry a
+  `scroll-margin-top` that clears the header, so a link from a post's contents
+  lands on the heading rather than behind it.
 - The header toggle cycles System → Light → Dark. A choice is stored in
   `localStorage` and applied by a one-line script in `<head>`, so it lands
   before the first paint rather than after hydration. With nothing stored the
