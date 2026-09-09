@@ -63,6 +63,19 @@ function datedPost(title: string, date: string, draft?: string): string {
   return `---\ntitle: "${title}"\ndate: "${date}"\nexcerpt: "An excerpt."\n${draftLine}---\n\nBody.\n`;
 }
 
+/** A post with an explicit date and tags, and optionally a `draft` line. */
+function taggedPost(
+  title: string,
+  date: string,
+  tags: string[],
+  draft?: string,
+): string {
+  const draftLine = draft === undefined ? "" : `draft: ${draft}\n`;
+  const tagList = tags.map((tag) => `"${tag}"`).join(", ");
+
+  return `---\ntitle: "${title}"\ndate: "${date}"\nexcerpt: "An excerpt."\ntags: [${tagList}]\n${draftLine}---\n\nBody.\n`;
+}
+
 /** A calendar date a given number of days from today, in UTC. */
 function daysFromToday(days: number): string {
   const date = new Date();
@@ -103,6 +116,7 @@ const {
   getAllTags,
   getPostBySlug,
   getPostSlugs,
+  getRelatedPosts,
   getSearchIndex,
   getSortedPosts,
 } = await import("../lib/posts.ts");
@@ -525,6 +539,95 @@ describe("getSearchIndex", () => {
     buildAs(t, "production");
 
     assert.deepEqual(Object.keys(getSearchIndex()), ["published"]);
+  });
+});
+
+describe("getRelatedPosts", () => {
+  test("ranks by shared tags, then by recency", (t) => {
+    const root = useTemporarySite({
+      // The subject carries Alpha and Beta.
+      "subject.md": taggedPost("Subject", daysFromToday(-1), ["Alpha", "Beta"]),
+      "both.md": taggedPost("Both", daysFromToday(-9), ["Alpha", "Beta"]),
+      "one-old.md": taggedPost("One old", daysFromToday(-8), ["Alpha"]),
+      "one-new.md": taggedPost("One new", daysFromToday(-2), ["Beta"]),
+      "none.md": taggedPost("None", daysFromToday(-3), ["Gamma"]),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    assert.deepEqual(
+      getRelatedPosts("subject").map((post) => post.title),
+      // Two shared tags first, even though it is the oldest; then the
+      // single-tag posts, newest of them first.
+      ["Both", "One new", "One old"],
+    );
+  });
+
+  test("never lists the post itself", (t) => {
+    const root = useTemporarySite({
+      "subject.md": taggedPost("Subject", daysFromToday(-1), ["Alpha"]),
+      "other.md": taggedPost("Other", daysFromToday(-2), ["Alpha"]),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    assert.deepEqual(
+      getRelatedPosts("subject").map((post) => post.slug),
+      ["other"],
+    );
+  });
+
+  test("falls back to recent posts when nothing overlaps", (t) => {
+    const root = useTemporarySite({
+      "subject.md": taggedPost("Subject", daysFromToday(-1), ["Alpha"]),
+      "older.md": taggedPost("Older", daysFromToday(-5), ["Gamma"]),
+      "newer.md": taggedPost("Newer", daysFromToday(-2), ["Delta"]),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    // Rather than an empty section: on an archive this small, what else is
+    // recent is the useful answer.
+    assert.deepEqual(
+      getRelatedPosts("subject").map((post) => post.title),
+      ["Newer", "Older"],
+    );
+  });
+
+  test("returns at most the limit asked for", (t) => {
+    const root = useTemporarySite({
+      "subject.md": taggedPost("Subject", daysFromToday(-1), ["Alpha"]),
+      "a.md": taggedPost("A", daysFromToday(-2), ["Alpha"]),
+      "b.md": taggedPost("B", daysFromToday(-3), ["Alpha"]),
+      "c.md": taggedPost("C", daysFromToday(-4), ["Alpha"]),
+      "d.md": taggedPost("D", daysFromToday(-5), ["Alpha"]),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    assert.equal(getRelatedPosts("subject").length, 3, "three by default");
+    assert.equal(getRelatedPosts("subject", 2).length, 2);
+  });
+
+  test("leaves out drafts and posts dated ahead", (t) => {
+    const root = useTemporarySite({
+      "subject.md": taggedPost("Subject", daysFromToday(-1), ["Alpha"]),
+      "draft.md": taggedPost("Draft", daysFromToday(-2), ["Alpha"], "true"),
+      "scheduled.md": taggedPost("Scheduled", daysFromToday(2), ["Alpha"]),
+      "published.md": taggedPost("Published", daysFromToday(-3), ["Alpha"]),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    buildAs(t, "production");
+
+    assert.deepEqual(
+      getRelatedPosts("subject").map((post) => post.title),
+      ["Published"],
+    );
+  });
+
+  test("returns nothing for a slug that is not a post", (t) => {
+    const root = useTemporarySite({
+      "subject.md": taggedPost("Subject", daysFromToday(-1), ["Alpha"]),
+    });
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+    assert.deepEqual(getRelatedPosts("no-such-post"), []);
   });
 });
 

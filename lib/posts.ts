@@ -482,6 +482,41 @@ export function getSearchIndex(): Record<string, string> {
   return index;
 }
 
+/**
+ * Other posts, most related first: by how many tags they share with this one,
+ * then by recency.
+ *
+ * Posts that share nothing still come back, in date order, so a post page is
+ * never left with an empty section. On an archive this size, "nothing related"
+ * and "here is what else is recent" are the same useful answer — and most
+ * posts here share a publication date, which is exactly what makes the
+ * chronological prev/next links a poor guide on their own.
+ */
+export function getRelatedPosts(slug: string, limit = 3): PostMeta[] {
+  const posts = getSortedPosts();
+  const current = posts.find((post) => post.slug === slug);
+
+  if (!current) {
+    return [];
+  }
+
+  const tags = new Set(current.tags);
+
+  return (
+    posts
+      .filter((post) => post.slug !== slug)
+      .map((post) => ({
+        post,
+        shared: post.tags.filter((tag) => tags.has(tag)).length,
+      }))
+      // Stable, so posts sharing the same number of tags keep the date order
+      // getSortedPosts() put them in.
+      .sort((a, b) => b.shared - a.shared)
+      .slice(0, limit)
+      .map((entry) => entry.post)
+  );
+}
+
 export type AdjacentPosts = {
   prev: PostMeta | null;
   next: PostMeta | null;

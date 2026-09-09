@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   formatDate,
   getAdjacentPosts,
+  getRelatedPosts,
   getPostBySlug,
   getPostSlugs,
   tagSlug,
@@ -71,6 +72,7 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const { prev, next } = getAdjacentPosts(slug);
+  const related = getRelatedPosts(slug);
   const url = postUrl(post.slug);
   const imageUrl = siteUrl(`/posts/${post.slug}/og.png`);
 
@@ -160,6 +162,26 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
         </div>
       </section>
+
+      {/* Ranked by shared tags, so this stays useful where the chronological
+          links below cannot be: most posts here share a publication date. */}
+      {related.length > 0 && (
+        <section className={styles.related} aria-labelledby="related-heading">
+          <h2 id="related-heading" className={styles.relatedHeading}>
+            Related notes
+          </h2>
+          <ul className={styles.relatedList}>
+            {related.map((post) => (
+              <li key={post.slug}>
+                <Link href={`/posts/${post.slug}`} className={styles.navCard}>
+                  <span className={styles.navTitle}>{post.title}</span>
+                  <span className={styles.navMeta}>{formatDate(post.date)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Post-to-Post Navigation */}
       {(prev || next) && (

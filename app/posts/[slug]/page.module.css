@@ -281,6 +281,29 @@
 }
 
 /* Post-to-Post Navigation */
+.related {
+  margin-top: var(--space-12);
+}
+
+.relatedHeading {
+  margin: 0 0 var(--space-4);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+/* The cards themselves are the ones the prev/next links use. */
+.relatedList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .postNav {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -361,6 +384,7 @@
 }
 
 @media (max-width: 36rem) {
+  .relatedList,
   .postNav {
     grid-template-columns: 1fr;
   }
