@@ -162,6 +162,12 @@ ever switched to the legacy build-from-branch source.
 - Markdown is rendered without sanitization. Posts are local files written by
   the site author, so the input is trusted — reconsider if content ever comes
   from elsewhere.
+- The header toggle cycles System → Light → Dark. A choice is stored in
+  `localStorage` and applied by a one-line script in `<head>`, so it lands
+  before the first paint rather than after hydration. With nothing stored the
+  attribute stays off and `prefers-color-scheme` decides — which is also what
+  happens when JavaScript never runs. `lib/theme.ts` holds the storage key and
+  that script, so the toggle and the markup cannot disagree.
 - Parsed and rendered posts are memoized per process, keyed by file path and
   modification time. A build reads each markdown file once; `next dev` still
   picks up an edit as soon as it lands.
