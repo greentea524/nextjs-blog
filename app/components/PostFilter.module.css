@@ -130,6 +130,107 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/*
+ * A year and the posts under it. The rule down the left is the timeline: it
+ * runs the height of the group, so the year label reads as a marker on it
+ * rather than as a heading floating above a list.
+ */
+.yearGroup {
+  position: relative;
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--color-border);
+}
+
+.yearGroup + .yearGroup {
+  margin-top: var(--space-8);
+}
+
+.yearHeading {
+  margin: 0 0 var(--space-4);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+/* The marker itself, sitting on the rule. */
+.yearHeading::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.45em;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.pageStep {
+  padding: 0.35rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pageStep:hover:not(:disabled),
+.pageStep:focus-visible:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.pageStep:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.pageList {
+  display: flex;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pageLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.pageLink:hover,
+.pageLink:focus-visible {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.pageCurrent,
+.pageCurrent:hover {
+  color: var(--color-accent);
+  font-weight: 600;
+  border-color: var(--color-accent);
+}
+
 .postList {
   list-style: none;
   margin: 0;
