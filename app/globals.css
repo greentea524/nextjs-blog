@@ -12,6 +12,8 @@
   --light-text-muted: #52525b;
   --light-background: #fdfdfc;
   --light-surface: #ffffff;
+  /* The sticky header, which blurs what scrolls under it. */
+  --light-surface-translucent: rgba(255, 255, 255, 0.72);
   --light-border: #e4e4e7;
   --light-accent: #2563eb;
   --light-accent-hover: #1d4ed8;
@@ -26,6 +28,7 @@
   --dark-text-muted: #a1a1aa;
   --dark-background: #09090b;
   --dark-surface: #121215;
+  --dark-surface-translucent: rgba(18, 18, 21, 0.72);
   --dark-border: #27272a;
   --dark-accent: #38bdf8;
   --dark-accent-hover: #7dd3fc;
@@ -40,6 +43,7 @@
   --color-text-muted: var(--light-text-muted);
   --color-background: var(--light-background);
   --color-surface: var(--light-surface);
+  --color-surface-translucent: var(--light-surface-translucent);
   --color-border: var(--light-border);
   --color-accent: var(--light-accent);
   --color-accent-hover: var(--light-accent-hover);
@@ -83,6 +87,7 @@
     --color-text-muted: var(--dark-text-muted);
     --color-background: var(--dark-background);
     --color-surface: var(--dark-surface);
+    --color-surface-translucent: var(--dark-surface-translucent);
     --color-border: var(--dark-border);
     --color-accent: var(--dark-accent);
     --color-accent-hover: var(--dark-accent-hover);
@@ -103,6 +108,7 @@
   --color-text-muted: var(--dark-text-muted);
   --color-background: var(--dark-background);
   --color-surface: var(--dark-surface);
+  --color-surface-translucent: var(--dark-surface-translucent);
   --color-border: var(--dark-border);
   --color-accent: var(--dark-accent);
   --color-accent-hover: var(--dark-accent-hover);
