@@ -162,6 +162,11 @@ ever switched to the legacy build-from-branch source.
 - Markdown is rendered without sanitization. Posts are local files written by
   the site author, so the input is trusted — reconsider if content ever comes
   from elsewhere.
+- Each post page lists up to three related notes, ranked by how many tags they
+  share with it and then by recency. Where nothing overlaps it falls back to
+  recent posts rather than showing an empty section — most posts here share a
+  publication date, which is what makes the chronological prev/next links a
+  poor guide on their own.
 - The header toggle cycles System → Light → Dark. A choice is stored in
   `localStorage` and applied by a one-line script in `<head>`, so it lands
   before the first paint rather than after hydration. With nothing stored the
