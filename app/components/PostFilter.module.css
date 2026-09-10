@@ -111,6 +111,25 @@
   color: #ffffff;
 }
 
+/* Quiet, and not pill-shaped: it filters nothing, it just reveals the rest. */
+.tagToggle {
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tagToggle:hover,
+.tagToggle:focus-visible {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
 .tagCount {
   font-size: 0.75rem;
   opacity: 0.8;
