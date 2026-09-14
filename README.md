@@ -28,6 +28,7 @@ folder of HTML, CSS, and JS.
 npm install
 npm run dev     # http://localhost:3000/nextjs-blog
 npm run build   # writes the static site to out/
+npm start       # serves out/ at http://localhost:3000/nextjs-blog
 npm run lint
 npm test        # unit tests for lib/posts.ts
 ```
@@ -35,14 +36,13 @@ npm test        # unit tests for lib/posts.ts
 The dev server and build both serve from the `/nextjs-blog` sub-path, matching
 how GitHub Pages hosts a project site.
 
-To preview a production build exactly as it will be served:
+To preview a production build exactly as it will be served, run `npm run build`
+and then `npm start`. That runs `scripts/preview.mjs`, a dependency-free static
+server that mounts `out/` at the sub-path and follows the same trailing-slash
+redirects Pages does. `PORT` overrides the port.
 
-```bash
-npm run build
-mkdir -p .preview && ln -sfn "$PWD/out" .preview/nextjs-blog
-python3 -m http.server 4173 --directory .preview
-# http://localhost:4173/nextjs-blog/
-```
+Note that `next start` is not part of this project: it boots the Next.js server
+runtime, which `output: "export"` does not build.
 
 ## Writing a post
 
