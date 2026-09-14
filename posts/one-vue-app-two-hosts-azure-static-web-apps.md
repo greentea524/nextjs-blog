@@ -70,11 +70,8 @@ is still built against `/vue-recipe-finder/`, so navigation breaks. A "keep
 these in sync" comment is a bug waiting for a second deploy target. Reading
 Vite's value removes the copy, so there is nothing left to keep in sync.
 
-Before this, I had looked at doing the same thing to my
-[Game Boy games site](../building-5-game-boy-games-in-one-web-shell/). A
-root build of that one still requested `/games/fonts/...` from five HTML files,
-because the path was written into inline `<style>` blocks. The fastest way to
-find those is to build with the new base and search the output for the old one:
+The fastest way to catch any copy you missed is to build with the new base and
+search the output for the old one:
 
 ```bash
 VITE_BASE=/ npm run build
